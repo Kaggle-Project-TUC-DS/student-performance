@@ -161,5 +161,4 @@ cython_debug/
 
 # Directories to ignore
 **/data/*
-data/
-data
+data/*
