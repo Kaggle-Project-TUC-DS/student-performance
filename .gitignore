@@ -160,5 +160,6 @@ cython_debug/
 #.idea/
 
 # Directories to ignore
-**/data/*
-data/*
+data/final/*
+data/raw/*
+data/processed/*
