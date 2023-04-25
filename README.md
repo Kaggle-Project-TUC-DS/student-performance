@@ -20,13 +20,13 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     - move data up so it fits the structure below
 
 ## Structure
-.
-├── data                        # data files
-│   ├── jo_wilder/
-│   ├── sample_submission.csv
-│   ├── test.csv                # test data
-│   ├── train_labels.csv
-│   └── train.csv               # train data
-├── utils                       # utilities
-└── README.md
+    .
+    ├── data                        # data files
+    │   ├── jo_wilder/
+    │   ├── sample_submission.csv
+    │   ├── test.csv                # test data
+    │   ├── train_labels.csv
+    │   └── train.csv               # train data
+    ├── utils                       # utilities
+    └── README.md
 
