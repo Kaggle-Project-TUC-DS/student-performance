@@ -9,8 +9,8 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     - setup ssh connection to github 
     - run command "git clone git@github.com:Kaggle-Project-TUC-DS/student-performance.git"
 2. Create conda environment and install requirements
-    - check if the pip of your conda environment is used, then run "pip install -r requirements.txt"
-3. OPTIONAL - Kaggle package (helpful for downloading data and might be useful for submissions)
+    - check if the pip of your conda environment is in use, then run "pip install -r requirements.txt"
+3. Only once - Get data with kaggle package
     - pip install kaggle
     - create api token at kaggle website/user settings
     - download kaggle.json if not triggered automatically
@@ -19,6 +19,12 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     - unzip 
     - rename "predict-student-performance-from-game-play" to "raw"
     - create "processed" and "final" folder (see structure)
+4. OPTIONAL - Create IPython kernel from conda env
+    - conda install -c anaconda ipykernel (possibly installed already)
+    - python -m ipykernel install --user --name=<name_of_kernel>
+5. OPTIONAL - install tensorflow_decision_forests to run example notebook
+    - platform-specific: https://www.tensorflow.org/decision_forests/installation
+
 
 ### Structure
     .
