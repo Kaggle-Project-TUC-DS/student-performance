@@ -4,7 +4,7 @@ The goal of this competition is to predict student performance during game-based
 Link to competition:
 https://www.kaggle.com/competitions/predict-student-performance-from-game-play
 
-## Setup
+### Setup
 1. Clone repo
     - setup ssh connection to github 
     - run command "git clone git@github.com:Kaggle-Project-TUC-DS/student-performance.git"
@@ -20,7 +20,7 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     - rename "predict-student-performance-from-game-play" to "raw"
     - create "processed" and "final" folder (see structure)
 
-## Structure
+### Structure
     .
     ├── data   
     │   ├── final                                       # data that we use when submitting
@@ -38,3 +38,8 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     ├── README.md                                       # maintain frequently
     └── requirements.txt                                # pip install -r requirements.txt / pip freeze > requirements.txt
 
+### Git
+($ git checkout -b <new branch name>)
+$ git add . 
+$ git commit -m “message about the commit"
+$ git push 
