@@ -23,17 +23,18 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
 ## Structure
     .
     ├── data   
-    │   ├── final                       # data that we use when submitting
-    │   ├── processed                   # processed data
-    │   └── raw                         # the original data form the competition
+    │   ├── final                                       # data that we use when submitting
+    │   ├── processed                                   # processed data
+    │   └── raw                                         # the original data form the competition
     │       ├── jo_wilder/
     │       ├── sample_submission.csv
-    │       ├── test.csv                # test data
+    │       ├── test.csv                                # test data
     │       ├── train_labels.csv
-    │       └── train.csv               # train data
-    ├── models                          # trained models 
-    ├── notebooks                       # pipelines for training/prediction using utils for clean code
-    ├── utils                           # functions for loading, preprocessing data and training, evaluating, visualizing models, etc
-    ├── README.md                       # maintain frequently
-    └── requirements.txt                # pip install -r requirements.txt / pip freeze > requirements.txt
+    │       └── train.csv                               # train data
+    ├── models                                          # trained models 
+    ├── notebooks                                       # pipelines for training/prediction using utils for clean code
+    │   └── student-...-decision-forests.ipynb
+    ├── utils                                           # functions for handling data and models, etc
+    ├── README.md                                       # maintain frequently
+    └── requirements.txt                                # pip install -r requirements.txt / pip freeze > requirements.txt
 
