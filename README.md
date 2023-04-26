@@ -15,9 +15,10 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     - create api token at kaggle website/user settings
     - download kaggle.json if not triggered automatically
     - move json file to –/.kaggle/kaggle.json
-    - navigate to repo root and run "kaggle competitions download -c predict-student-performance-from-game-play"
+    - navigate to ./data/ and run "kaggle competitions download -c predict-student-performance-from-game-play"
     - unzip 
-    - rename "predict-student-performance-from-game-play" to "data" 
+    - rename "predict-student-performance-from-game-play" to "raw"
+    - create "processed" and "final" folder (see structure)
 
 ## Structure
     .
