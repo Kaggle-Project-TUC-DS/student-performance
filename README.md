@@ -39,7 +39,7 @@ https://www.kaggle.com/competitions/predict-student-performance-from-game-play
     └── requirements.txt                                # pip install -r requirements.txt / pip freeze > requirements.txt
 
 ### Git
-($ git checkout -b <new branch name>)
-$ git add . 
-$ git commit -m “message about the commit"
-$ git push 
+1. ($ git checkout -b <new branch name>)
+2. $ git add . 
+3. $ git commit -m “message about the commit"
+4. $ git push 
