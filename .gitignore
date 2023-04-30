@@ -160,6 +160,10 @@ cython_debug/
 #.idea/
 
 # Directories to ignore
-data/final/*
-data/raw/*
-data/processed/*
+**/data/*
+*/data
+data/*
+data
+
+# files to ignore
+desktop.ini
