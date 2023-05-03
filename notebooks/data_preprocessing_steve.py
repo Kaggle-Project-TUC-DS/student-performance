@@ -62,17 +62,21 @@ def feature_engineer_steve(dataset_df):
         tmp.name = tmp.name + '_std'
         dfs.append(tmp)    
     for c in COUNTING:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min')
+        tmp = 1+ dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
         tmp.name = tmp.name + '_sum_of_actions'
         dfs.append(tmp)
     for c in MAXIMUM:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('max')-dataset_df.groupby(['session_id','level'])[c].agg('min')
+        tmp = dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
         tmp.name = tmp.name + '_max'
         dfs.append(tmp)
+    
     dataset_df = pd.concat(dfs,axis=1)
     dataset_df = dataset_df.fillna(-1)
     dataset_df = dataset_df.reset_index()
     dataset_df = dataset_df.set_index('session_id')
+    
+     #add mean-Clicks per second afterwards cause we need the time for each level
+    dataset_df["mean_clicks_per_time"] = dataset_df["index_sum_of_actions"]/ dataset_df["elapsed_time_max"]
     return dataset_df
 
 ##test data preprocessing with Subset of 5 million rows
