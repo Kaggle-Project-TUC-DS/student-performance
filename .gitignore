@@ -166,4 +166,8 @@ data/*
 data
 
 # files to ignore
+<<<<<<< HEAD
 desktop.ini
+=======
+desktop.ini
+>>>>>>> steves_b
