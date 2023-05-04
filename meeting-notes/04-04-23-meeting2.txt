@@ -1,0 +1,14 @@
+Notes:
+- Mergen
+- Feature Engineering
+
+Aufgaben:
+- Models bauen
+    - ANN (Noah, Stephan)
+    - Random Forest - XGBoost (?)
+    - SVM (Marvin)
+    - Logistic Regression (Johannes)
+- Feature Engineering
+    - Koordinaten Referenzierung (Martin)
+    - Basic notebook debuggen (Johannes)
+- Code optimization (Marvin)
