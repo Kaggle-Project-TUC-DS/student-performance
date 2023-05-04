@@ -1,0 +1,11 @@
+Notes:
+- Setup - Repo
+- Feature Engineering
+- Cloud Storage
+
+Aufgaben:
+- Gdrive, Repo Setup (Noah, Marvin)
+- Feature Engineering
+    - Zeit Sachen (Stephan)
+    - Gruppieren (Martin)
+    - Sample notebook explorieren (Johannes)
