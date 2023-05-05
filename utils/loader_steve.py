@@ -10,8 +10,7 @@ import pandas as pd
 #define the dictionary to load in the data efficiently
 
 def load_train_data(file_path: str = "data/processed/train.csv", dtypes: = dict = None, n_rows: int = None)
-    if dtypes is None:
-    
+    if dtypes = None:    
         dtypes={
             'level': np.uint8,  
             'session_id':np.int64,
