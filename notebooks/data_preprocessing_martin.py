@@ -24,7 +24,7 @@ dtypes={
     'music':'category',
     'level_group':'category'}
 
-dataset_df = pd.read_csv('data/raw/train.csv', dtype=dtypes)
+#dataset_df = pd.read_csv('data/raw/train.csv', dtype=dtypes)
 
 ###Function to add variables to the whole dataset
 
@@ -37,12 +37,31 @@ def adding_new_variables(dataset_df):
 
     return dataset_df
 
+def adding_distance_variable(dataset_df):
+    dataset_df = dataset_df.sort_values(['session_id', 'index'])
+    group = dataset_df.groupby(['session_id', 'index'])
+    
+    # Berechnung der Differenz zwischen den Koordinaten und Quadratur
+    dataset_df['room_coor_x_diff'] = group['room_coor_x'].diff().fillna(value=0)
+    dataset_df['room_coor_y_diff'] = group['room_coor_y'].diff().fillna(value=0)
+    
+    # Berechnung der Euclidischen Distanz
+    def euclidean_distance(row):
+        x = row['room_coor_x_diff']
+        y = row['room_coor_y_diff']
+        return np.sqrt(x**2 + y**2)
+    
+    dataset_df['distance_clicks'] = dataset_df.apply(euclidean_distance, axis=1)
+    
+    return dataset_df
+
+
 #Function to clean the sequential data for the training of the model
 
 #For that Function to work we need to specify the variables in Categorical and Numerical & Counting
 
 CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid']
-NUMERICALmean = ['hover_duration',"difference_clicks"]
+NUMERICALmean = ['hover_duration','difference_clicks','distance_clicks']
 NUMERICALstd = ['elapsed_time','page','room_coor_x', 'room_coor_y', 'screen_coor_x', 'screen_coor_y', 'hover_duration',"difference_clicks"]
 COUNTING = ["index"]
 MAXIMUM = ["difference_clicks", "elapsed_time"]
@@ -80,10 +99,10 @@ def feature_engineer_steve(dataset_df):
     return dataset_df
 
 ##test data preprocessing with Subset of 5 million rows
-dataset_df = pd.read_csv("data/raw/train.csv", dtype = dtypes, nrows = 5000000)
-os.chdir("N:\MASTER_DS\Code\Kaggle_competition\Kaggle-seminar\student-performance")
+#dataset_df = pd.read_csv("data/raw/train.csv", dtype = dtypes, nrows = 5000000)
+#os.chdir("N:\MASTER_DS\Code\Kaggle_competition\Kaggle-seminar\student-performance")
 
-dataset_df_added = adding_new_variables(dataset_df)
-dataset_df_level = feature_engineer_steve(dataset_df_added)
-print(dataset_df_added)
-print(dataset_df_level)
+#dataset_df_added = adding_new_variables(dataset_df)
+#dataset_df_level = feature_engineer_steve(dataset_df_added)
+#print(dataset_df_added)
+#print(dataset_df_level)
