@@ -164,6 +164,7 @@ cython_debug/
 */data
 data/*
 data
+test
 
 # files to ignore
 desktop.ini
