@@ -264,7 +264,7 @@ groups = dataset_df.groupby('level_group')
 result = {}
 
 # Loop over each group
-for name, group in groups:
+
     # Add the group to the result dictionary
     result[name] = group
 
