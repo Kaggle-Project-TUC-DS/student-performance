@@ -223,16 +223,48 @@ def flatten_df_one_at_a_time(df, exclude=[]):
 
 
 #for be
-dataset_df = adding_new_variables_rescaling(dataset_df)
-dataset_df = feature_engineer_steve(dataset_df)
+#if we already have the dataset we can just load it in and not calculate it
+#dataset_df = adding_new_variables_rescaling(dataset_df)
+#dataset_df = feature_engineer_steve(dataset_df)
+#new apporach: save these dataframes to avoid recalculkating them
+#dataset_df.to_csv('data/processed/dataset_df_level.csv')
 
+# load the dataframe
 #split the dataframe into three different ones depending on the level group
-dataset_df = dataset_df.groupby('level_group')
+dtypes = {
+    'level': np.uint8,
+    "level_group": "category",
+    'event_name': np.uint8,
+    'name': np.uint8,
+    'fqid': np.uint8,
+    'room_fqid': np.uint8,           
+    "text_fqid": np.uint8,
+    'fullscreen': np.uint8,
+    'hq': np.uint8,
+    'music': np.uint8,
+    'hover_duration_mean': np.float32,
+    'difference_clicks_mean': np.float32,
+    'elapsed_time_std': np.float32,
+    'page_std': np.float32,
+    'room_coor_x_std': np.float32,
+    'room_coor_y_std': np.float32,
+    'screen_coor_x_std': np.float32,
+    'screen_coor_y_std': np.float32,
+    'hover_duration_std': np.float32,
+    'difference_clicks_std': np.float32,
+    'index_sum_of_actions': np.float32,
+    'difference_clicks_max': np.float32,
+    'elapsed_time_max': np.float32,
+    'clicks_per_second': np.float32}
+
+dataset_df = pd.read_csv("data/processed/dataset_df_level.csv", dtype=dtypes)
+groups = dataset_df.groupby('level_group')
 
 # Create a dictionary to store the resulting dataframes
 result = {}
+
 # Loop over each group
-for name, group in dataset_df:
+for name, group in groups:
     # Add the group to the result dictionary
     result[name] = group
 
@@ -240,6 +272,7 @@ for name, group in dataset_df:
 df_0_4 = result['0-4']
 df_5_12 = result['5-12']
 df_13_22 = result['13-22']
+print(df_0_4.dtypes)
 
 clear_memory(keep= ["df_0_4", "df_5_12","df_13_22"])
 
