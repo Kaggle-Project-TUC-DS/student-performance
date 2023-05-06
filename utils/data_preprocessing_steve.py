@@ -36,7 +36,7 @@ dtypes={
     'music':'category',
     'level_group':'category'}
 
-dataset_df = pd.read_csv('data/raw/train.csv', dtype=dtypes)
+dataset_df = pd.read_csv('/Users/nzuchna/Library/CloudStorage/GoogleDrive-s1068886@stud.sbg.ac.at/My Drive/Student-performance-data/data/raw/train.csv', dtype=dtypes)
 
 ###Function to add variables to the whole dataset
 
