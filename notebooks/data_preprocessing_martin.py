@@ -37,24 +37,19 @@ def adding_new_variables(dataset_df):
 
     return dataset_df
 
-def adding_distance_variable(dataset_df):
-    dataset_df = dataset_df.sort_values(['session_id', 'index'])
-    group = dataset_df.groupby(['session_id', 'index'])
-    
-    # Berechnung der Differenz zwischen den Koordinaten und Quadratur
-    dataset_df['room_coor_x_diff'] = group['room_coor_x'].diff().fillna(value=0)
-    dataset_df['room_coor_y_diff'] = group['room_coor_y'].diff().fillna(value=0)
-    
-    # Berechnung der Euclidischen Distanz
-    def euclidean_distance(row):
-        x = row['room_coor_x_diff']
-        y = row['room_coor_y_diff']
-        return np.sqrt(x**2 + y**2)
-    
-    dataset_df['distance_clicks'] = dataset_df.apply(euclidean_distance, axis=1)
-    
-    return dataset_df
-
+def adding_euclid_distance_variable(dataset_df):
+    # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
+    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])    
+    # Interpolate missing values in the 'room_coor_x' and 'room_coor_y' columns
+    coords = dataset_df[['room_coor_x', 'room_coor_y']].interpolate()    
+    # Calculate the Euclidean distance between consecutive rows of the 'coords' DataFrame
+    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()    
+    # Assign the calculated distances to a new column named 'distance_clicks'
+    new_df = dataset_df.assign(distance_clicks=distance_clicks)    
+    # Reset the index of the resulting DataFrame
+    new_df.reset_index(inplace=True)    
+    # Return the resulting DataFrame
+    return new_df
 
 #Function to clean the sequential data for the training of the model
 
