@@ -63,7 +63,7 @@ def adding_screen_distance_clicks_variable(dataset_df):
     # Return the resulting DataFrame
     return new_df
 
-def adding_euclid_distance_sum_variable(dataset_df):
+def adding_euclid_distance_cumsum_variable(dataset_df):
     # Replace NaN values in the 'distance_clicks' column with 0
     dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
     # Compute the cumulative sum of the 'distance_clicks' column within each session
@@ -71,6 +71,14 @@ def adding_euclid_distance_sum_variable(dataset_df):
     # Assign the computed cumulative sum to a new column 'sum_distance_clicks' in the original dataframe
     new_df = dataset_df.assign(sum_distance_clicks=sum_distance_clicks) 
     return new_df
+
+def adding_euclid_distance_sum_variable(dataset_df):
+    # Replace NaN values in the 'distance_clicks' column with 0
+    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
+    # Compute the sum of the 'distance_clicks' column within each session and picks the max
+    cumsum_distance_clicks_max = dataset_df.groupby('session_id')['distance_clicks'].sum()
+    return cumsum_distance_clicks_max
+
 
 #Function to clean the sequential data for the training of the model
 
