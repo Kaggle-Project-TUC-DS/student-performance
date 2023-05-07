@@ -220,6 +220,88 @@ def flatten_df_one_at_a_time(df, exclude=[]):
         new_df = new_df[[col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
 
     return new_df
+import numpy as np
+
+import numpy as np
+import pandas as pd
+
+def combine_rows(df, n_flatten=5, only_one=None, drop=None):
+    """
+    Combines every n_flatten rows of a Pandas DataFrame into a new DataFrame, with each row containing the combined values from the n_flatten rows.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame to combine.
+        n_flatten (int): The number of rows to be combined into a single row.
+        only_one (list): A list of column names to keep only the first occurrence of in the output DataFrame.
+        drop (list): A list of column names to drop from the input DataFrame before performing the calculation.
+
+    Returns:
+        pandas.DataFrame: A new DataFrame containing one row for every n_flatten rows of the input DataFrame, with each row containing the combined values from the n_flatten rows.
+    """
+    # Create a copy of the input DataFrame to modify
+    df = df.copy()
+
+    # Use value_counts() to get the count of each session_id
+    counts = df['session_id'].value_counts()
+
+    # Check if each group has the same number of rows
+    if (counts % n_flatten).any():
+        # Get the session_ids that need to be generated
+        need_generating = counts[counts < n_flatten].index.tolist()
+        num_generated_rows = 0
+        
+        # Loop through the session_ids that need to be generated
+        for session_id in need_generating:
+            # Generate a new row for this session_id
+            new_row = {"session_id": session_id}
+            for col in df.columns:
+                if col == "session_id":
+                    continue
+                elif df[col].dtype.name == "category":
+                    # Categorical column - set value to "generated"
+                    new_row[col] = "generated"
+                else:
+                    # Numeric column - set value to average of other values in column with the same level
+                    level_values = df.loc[df["session_id"] == session_id, "level"].unique()
+                    for level in level_values:
+                        if level == "generated":
+                            continue
+                        other_values = df.loc[(df["session_id"] == session_id) & (df["level"] == level), col]
+                        if other_values.dtype.kind in 'biufc':
+                            new_value = other_values.mean()
+                            new_row[col] = new_value
+                            break
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            num_generated_rows += 1
+
+        print(f"Generated {num_generated_rows} rows with indices: {list(range(len(df) - num_generated_rows, len(df)))}\n{new_row}")
+
+
+    # Drop specified columns from input DataFrame
+    if drop:
+        df = df.drop(columns=drop)
+
+    # Determine the number of rows and columns in the input DataFrame
+    num_rows, num_cols = df.shape
+
+    # Determine the number of new rows in the output DataFrame
+    num_new_rows = num_rows // n_flatten
+
+    # Reshape the flattened values into a new array with the desired shape
+    values = df.values.flatten()
+    new_values = values.reshape(num_new_rows, n_flatten*num_cols)
+
+    # Create a new DataFrame from the reshaped values
+    new_df = pd.DataFrame(new_values, columns=[f"{col}_{i}" for i in range(1, n_flatten+1) for col in df.columns])
+
+    # Drop specified columns from output DataFrame
+    if only_one:
+        for col in only_one:
+            keep_col = f"{col}_1"
+            drop_cols = [f"{col}_{i}" for i in range(2, n_flatten+1)]
+            new_df = new_df.drop(columns=drop_cols)
+
+    return new_df
 
 
 #for be
@@ -257,7 +339,7 @@ dtypes = {
     'elapsed_time_max': np.float32,
     'clicks_per_second': np.float32}
 
-dataset_df = pd.read_csv("data/processed/dataset_df_level.csv", dtype=dtypes)
+'''dataset_df = pd.read_csv("data/processed/dataset_df_level.csv", dtype=dtypes)
 groups = dataset_df.groupby('level_group')
 
 # Create a dictionary to store the resulting dataframes
@@ -274,25 +356,35 @@ df_5_12 = result['5-12']
 df_13_22 = result['13-22']
 print(df_0_4.dtypes)
 
-clear_memory(keep= ["df_0_4", "df_5_12","df_13_22"])
-
+clear_memory(keep= ["df_0_4", "df_5_12","df_13_22"])'''
+#load the data
+df_0_4 = pd.read_csv("data\processed\df_0_4.csv", dtype=dtypes, index_col= 0)
+df_0_4 = df_0_4.reset_index(drop=True)
+df_5_12 = pd.read_csv("data\processed\df_5_12.csv", dtype=dtypes, index_col= 0)
+df_5_12 = df_5_12.reset_index(drop=True)
+df_13_22 = pd.read_csv("data\processed\df_13_22.csv", dtype=dtypes, index_col= 0)
+df_13_22 = df_13_22.reset_index(drop=True)
 #specify columns we want to exclude for the flattening
-ex = ["level", "music","hq","fullscreen"]
+ex = ["level_group","music", "hq", "fullscreen"]
+drop = ["level"]
 
 #df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
 #make the dataframe, save it and delete it to save memory
-df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+#df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+df_0_4 = combine_rows(df_0_4,n_flatten= 5 ,drop= drop, only_one= ex)
 df_0_4.to_csv('data/processed/df_0_4_flattened.csv')
 
 clear_memory(keep=["df_5_12","df_13_22"])
 
 
-df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
+#df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
+df_5_12 = combine_rows(df_5_12,n_flatten= 8 ,drop= drop, only_one= ex)
 df_5_12.to_csv('data/processed/df_5_12_flattened.csv')
 
 clear_memory(keep= ["df_13_22"])
 
-df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
+#df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
+df_13_22 = combine_rows(df_13_22,n_flatten= 10 ,drop= drop, only_one= ex)
 df_13_22.to_csv('data/processed/df_13_22_flattened.csv')
 # Export results
 
