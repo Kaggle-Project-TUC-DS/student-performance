@@ -41,9 +41,9 @@ def adding_euclid_distance_variable(dataset_df):
     # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
     dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])    
     # Interpolate missing values in the 'room_coor_x' and 'room_coor_y' columns
-    coords = dataset_df[['room_coor_x', 'room_coor_y']].interpolate()    
+    coords = dataset_df[['room_coor_x', 'room_coor_y']].interpolate()   
     # Calculate the Euclidean distance between consecutive rows of the 'coords' DataFrame
-    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()    
+    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()  
     # Assign the calculated distances to a new column named 'distance_clicks'
     new_df = dataset_df.assign(distance_clicks=distance_clicks)    
     # Reset the index of the resulting DataFrame
@@ -51,12 +51,33 @@ def adding_euclid_distance_variable(dataset_df):
     # Return the resulting DataFrame
     return new_df
 
+def adding_screen_distance_clicks_variable(dataset_df):
+    # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
+    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])    
+    # Interpolate missing values in the 'screen_coor_x' and 'screen_coor_y' columns
+    screen_coords = dataset_df[['screen_coor_x', 'screen_coor_y']].interpolate()      
+    # Calculate the Euclidean distance between consecutive rows of the 'screen_coords' DataFrame
+    screen_distance_clicks = np.linalg.norm(screen_coords.diff(), axis=1).squeeze()    
+    # Assign the calculated distances to a new column named 'screen_distance_clicks'
+    new_df = dataset_df.assign(screen_distance_clicks=screen_distance_clicks)     
+    # Return the resulting DataFrame
+    return new_df
+
+def adding_euclid_distance_sum_variable(dataset_df):
+    # Replace NaN values in the 'distance_clicks' column with 0
+    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
+    # Compute the cumulative sum of the 'distance_clicks' column within each session
+    sum_distance_clicks = dataset_df.groupby('session_id')['distance_clicks'].cumsum()
+    # Assign the computed cumulative sum to a new column 'sum_distance_clicks' in the original dataframe
+    new_df = dataset_df.assign(sum_distance_clicks=sum_distance_clicks) 
+    return new_df
+
 #Function to clean the sequential data for the training of the model
 
 #For that Function to work we need to specify the variables in Categorical and Numerical & Counting
 
 CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid']
-NUMERICALmean = ['hover_duration','difference_clicks','distance_clicks']
+NUMERICALmean = ['hover_duration','difference_clicks','distance_clicks','sum_distance_clicks']
 NUMERICALstd = ['elapsed_time','page','room_coor_x', 'room_coor_y', 'screen_coor_x', 'screen_coor_y', 'hover_duration',"difference_clicks"]
 COUNTING = ["index"]
 MAXIMUM = ["difference_clicks", "elapsed_time"]
