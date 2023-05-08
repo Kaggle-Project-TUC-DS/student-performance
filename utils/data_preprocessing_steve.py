@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib as plt
 import os
 import gc
+from typing import Tuple
 
 #function to delete variables from memory
 def clear_memory(keep=None):
@@ -302,6 +303,71 @@ def combine_rows(df, n_flatten=5, only_one=None, drop=None):
             new_df = new_df.drop(columns=drop_cols)
 
     return new_df
+def generate_rows(df: pd.DataFrame, n_flatten: int):
+    # Use value_counts() to get the count of each session_id
+    counts = df['session_id'].value_counts()
+
+    # Check if each group has the same number of rows
+    if (counts % n_flatten).any():
+        # Get the session_ids that need to be generated
+        need_generating = counts[counts < n_flatten].index.tolist()
+        num_generated_rows = 0
+        generated_sessions = []
+        generated_rows = []
+        
+        # Loop through the session_ids that need to be generated
+        for session_id in need_generating:
+            # Check if all levels are present in this session
+            levels_present = set(df.loc[df['session_id'] == session_id, 'level'].unique())
+            min_level = df['level'].min()
+            max_level = df['level'].max()
+            expected_levels = set(range(min_level, max_level + 1))
+            if levels_present != expected_levels:
+                # Generate new rows for missing levels
+                missing_levels = expected_levels - levels_present
+                new_rows = []
+                for missing_level in missing_levels:
+                    new_row = {"session_id": session_id, "level": missing_level}
+                    for col in df.columns:
+                        if col == "session_id" or col == "level":
+                            continue
+                        elif df[col].dtype.name == "category":
+                            # Categorical column - set value to "generated"
+                            new_row[col] = "generated"
+                        else:
+                            # Numeric column - set value to average of other values in column with the same level
+                            other_values = df.loc[(df["session_id"] == session_id) & (df["level"] == missing_level), col]
+                            if other_values.dtype.kind in 'biufc':
+                                new_value = other_values.mean()
+                                if np.isnan(new_value):
+                                    new_value = df.loc[df["level"] == missing_level, col].mean()
+                                new_row[col] = new_value
+                    new_rows.append(new_row)
+
+                # Add the new rows to the dataframe
+                df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+                num_generated_rows += len(new_rows)
+                generated_sessions.append({"session_id": session_id, "num_rows": len(new_rows)})
+                generated_rows.extend(new_rows)
+
+        print(f"Generated {num_generated_rows} rows with indices: {list(range(len(df) - num_generated_rows, len(df)))}")
+        
+        # Create output dataframe 2
+        df2 = pd.DataFrame(generated_sessions)
+        df2 = df2.set_index("session_id")
+        print("Generated rows per session id:")
+        print(df2)
+        
+        # Create output dataframe 3
+        df3 = pd.DataFrame(generated_rows)
+        df3 = df3.reindex(df.columns, axis=1)
+        print("Generated rows:")
+        print(df3)
+    else: 
+        df2 = []
+        df3 = []
+    return df, df2, df3
+
 
 
 #for be
@@ -371,23 +437,28 @@ drop = ["level"]
 #df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
 #make the dataframe, save it and delete it to save memory
 #df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+df_0_4, df0_4_missing_sessions, df0_4_new_row = generate_rows(df_0_4,n_flatten= 5)
 df_0_4 = combine_rows(df_0_4,n_flatten= 5 ,drop= drop, only_one= ex)
 df_0_4.to_csv('data/processed/df_0_4_flattened.csv')
 
-clear_memory(keep=["df_5_12","df_13_22"])
+#clear_memory(keep=["df_5_12","df_13_22"])
 
 
 #df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
+df_5_12, df5_12_missing_sessions, df5_12_new_rows = generate_rows(df_5_12,n_flatten= 8)
 df_5_12 = combine_rows(df_5_12,n_flatten= 8 ,drop= drop, only_one= ex)
 df_5_12.to_csv('data/processed/df_5_12_flattened.csv')
 
-clear_memory(keep= ["df_13_22"])
+#clear_memory(keep= ["df_13_22"])
 
 #df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
+df_13_22, df13_22_missing_sessions, df13_22_new_rows = generate_rows(df_13_22,n_flatten= 10)
 df_13_22 = combine_rows(df_13_22,n_flatten= 10 ,drop= drop, only_one= ex)
 df_13_22.to_csv('data/processed/df_13_22_flattened.csv')
 # Export results
-
+#export the generated rows in a seperated df to controll later
+df_generated_rows = pd.concat([df5_12_new_rows, df13_22_new_rows])
+df_generated_rows.to_csv('data/processed/df_generated_rows.csv')
 
 #'df_5_12_flattened.to_csv('data/processed/df_5_12_flattened.csv')
 #'df_13_22_flattened.to_csv('data/processed/df_13_22_flattened.csv')
