@@ -6,7 +6,12 @@ import os
 import gc
 from typing import Tuple
 from loader_steve import load_train_data
-
+#set wd
+# get working directory and remove last folder
+# TODO: make this more robust
+wd = os.path.dirname(os.getcwd())
+os.chdir(wd)
+print('Working Directory: ', os.getcwd())
 #Code
 #############################################################################
 #############################################################################
@@ -36,18 +41,28 @@ dataset_df = load_train_data(file_path= "data\raw\train.csv", dtypes= dtypes_raw
 
 from preprocessing_func import adding_new_variables_rescaling
 dataset_df = adding_new_variables_rescaling(dataset_df)
+#Martins additional values
+from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, adding_euclid_distance_cumsum_variable 
+dataset_df = adding_screen_distance_clicks_variable(dataset_df) 
+dataset_df = adding_euclid_distance_variable(dataset_df)
+dataset_df = adding_euclid_distance_cumsum_variable(dataset_df)
+
 
 #Define which variables get which treatement from the added dataset 
 CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
-NUMERICALmean = ['hover_duration','difference_clicks']
-NUMERICALstd = ['elapsed_time','page','room_coor_x', 'room_coor_y', 'screen_coor_x', 'screen_coor_y', 'hover_duration', 'difference_clicks']
+NUMERICALmean = ['hover_duration','difference_clicks', "distance_clicks", "screen_distance_clicks"]
+NUMERICALstd = ['elapsed_time','page', 'hover_duration', 'difference_clicks', "screen_distance_clicks"]
 COUNTING = ['index']
-MAXIMUM = ['difference_clicks', 'elapsed_time']
+MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
 
 from preprocessing_func import feature_engineer_steve
 
 dataset_df = feature_engineer_steve(dataset_df)
 
+dataset_df.to_csv('data/processed/df_level.csv')
+
+from preprocessing_func import split_level_groups
+df_0_4, df_5_12,df_13_22 = split_level_groups(dataset_df)
 #load the data
 df_0_4 = pd.read_csv("data\processed\df_0_4.csv", dtype=dtypes, index_col= 0)
 df_0_4 = df_0_4.reset_index(drop=True)

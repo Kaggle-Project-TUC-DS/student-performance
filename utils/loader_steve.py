@@ -12,7 +12,7 @@ import pandas as pd
 import pandas as pd
 import numpy as np
 
-def load_train_data(file_path: str = "data/processed/train.csv", dtypes: dict = None, n_rows: int = None):
+def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
     # If dtypes is not specified, set default data types for each column
     if dtypes is None:
         dtypes = {

@@ -54,16 +54,96 @@ def feature_engineer_steve(dataset_df):
         tmp.name = tmp.name + '_max'
         dfs.append(tmp)
     
+    # add martins sum of movement in level
+    #happens before
+    #dataset_df = adding_euclid_distance_sum_variable(dataset_df) #at this time is think it is just returning a single value and does not add anything to cumsum
+    
     dataset_df = pd.concat(dfs,axis=1)
     dataset_df = dataset_df.fillna(-1)
     dataset_df = dataset_df.reset_index()
     dataset_df = dataset_df.set_index('session_id') 
     
-# add Clicks per second afterwards cause we need the time for each level first
+    # add Clicks per second afterwards cause we need the time for each level first
     dataset_df['clicks_per_second'] = dataset_df['index_sum_of_actions'] / dataset_df['elapsed_time_max']
     dataset_df["clicks_per_second"].replace([np.inf, -np.inf], 0, inplace=True)
+    
 
     return dataset_df
+
+
+def adding_euclid_distance_variable(dataset_df):
+    # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
+    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])  
+    # Interpolate missing values in the 'room_coor_x' and 'room_coor_y' columns
+    coords = dataset_df.groupby(['session_id',"level"])[['room_coor_x', 'room_coor_y']].transform(lambda x: x.interpolate())   
+    # Calculate the Euclidean distance between consecutive rows of the 'coords' DataFrame
+    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()  
+    # Assign the calculated distances to a new column named 'distance_clicks'
+    new_df = dataset_df.assign(distance_clicks=distance_clicks)    
+    # Reset the index of the resulting DataFrame
+    new_df.reset_index(inplace=True)    
+    # Return the resulting DataFrame
+    return new_df
+
+def adding_screen_distance_clicks_variable(dataset_df):
+    # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
+    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])    
+    # Interpolate missing values in the 'screen_coor_x' and 'screen_coor_y' columns
+    screen_coords = dataset_df.groupby(['session_id',"level"])[['screen_coor_x', 'screen_coor_y']].transform(lambda x: x.interpolate())
+    # Calculate the Euclidean distance between consecutive rows of the 'screen_coords' DataFrame
+    screen_distance_clicks = np.linalg.norm(screen_coords.diff(), axis=1).squeeze()    
+    # Assign the calculated distances to a new column named 'screen_distance_clicks'
+    new_df = dataset_df.assign(screen_distance_clicks=screen_distance_clicks)     
+    # Return the resulting DataFrame
+    return new_df
+
+def adding_euclid_distance_cumsum_variable(dataset_df):
+    # Replace NaN values in the 'distance_clicks' column with 0
+    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
+    # Compute the cumulative sum of the 'distance_clicks' column within each session
+    sum_distance_clicks = dataset_df.groupby(['session_id'])['distance_clicks'].cumsum()
+    # Assign the computed cumulative sum to a new column 'sum_distance_clicks' in the original dataframe
+    new_df = dataset_df.assign(sum_distance_clicks=sum_distance_clicks) 
+    return new_df
+
+def adding_euclid_distance_sum_variable(dataset_df):
+    # Replace NaN values in the 'distance_clicks' column with 0
+    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
+    # Compute the sum of the 'distance_clicks' column within each session and picks the max
+    cumsum_distance_clicks_max = dataset_df.groupby(['session_id'])['distance_clicks'].sum()
+    new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
+    return new_df
+    # Replace NaN values in the 'distance_clicks' column with 0
+    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
+    # Compute the sum of the 'distance_clicks' column within each session and picks the max
+    cumsum_distance_clicks_max = dataset_df.groupby('session_id', "level")['distance_clicks'].sum()
+    new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
+    return new_df
+
+def split_level_groups(df):
+    # Split the dataframe into three different ones depending on the level group
+    groups = df.groupby('level_group')
+
+    # Create a dictionary to store the resulting dataframes
+    result = {}
+
+    # Loop over each group
+    for name, group in groups:
+        # Add the group to the result dictionary
+        result[name] = group
+
+    # Access the resulting dataframes using their keys
+    df_0_4 = result['0-4']
+    df_5_12 = result['5-12']
+    df_13_22 = result['13-22']
+
+    # Sort each dataframe by "session_id" and "level"
+    df_0_4 = df_0_4.sort_values(['session_id', 'level'])
+    df_5_12 = df_5_12.sort_values(['session_id', 'level'])
+    df_13_22 = df_13_22.sort_values(['session_id', 'level'])
+
+    # Return the resulting dataframes
+    return df_0_4, df_5_12, df_13_22
 
 def combine_rows(df, n_flatten=5, only_one=None, drop=None):
     """
@@ -173,6 +253,8 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
         df2 = pd.DataFrame()
         df3 = pd.DataFrame()
     df["level_group"] = level_g
+    df = df.sort_values(by=["session_id", "level"])
+    df = df.reset_index(drop=True)
     df3["level_group"] = level_g
     return df, df2, df3
 def load_train_data(file_path: str, dtypes: dict = None, n_rows: int = None):
