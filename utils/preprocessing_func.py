@@ -60,8 +60,9 @@ def feature_engineer_steve(dataset_df):
     dataset_df = dataset_df.set_index('session_id') 
     
 # add Clicks per second afterwards cause we need the time for each level first
-    dataset_df['clicks_per_second'] = dataset_df['index_sum_of_actions']/ dataset_df['elapsed_time_max']
- 
+    dataset_df['clicks_per_second'] = dataset_df['index_sum_of_actions'] / dataset_df['elapsed_time_max']
+    dataset_df["clicks_per_second"].replace([np.inf, -np.inf], 0, inplace=True)
+
     return dataset_df
 
 def combine_rows(df, n_flatten=5, only_one=None, drop=None):
