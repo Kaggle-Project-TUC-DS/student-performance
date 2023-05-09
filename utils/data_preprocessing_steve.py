@@ -329,6 +329,8 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
         df3 = pd.DataFrame()
     df["level_group"] = level_g
     df3["level_group"] = level_g
+    df = df.sort_values(['session_id','level'])
+    df = df.reset_index(drop=True)
     return df, df2, df3
 
 
