@@ -6,6 +6,60 @@ import os
 import gc
 from typing import Tuple
 
+def load_train_data(file_path: str, dtypes: dict = None, n_rows: int = None):
+    # If dtypes is not specified, set default data types for each column
+    if dtypes is None:
+        dtypes = {
+            'level': np.uint8,  
+            'session_id': np.int64,
+            'level_group': 'category',
+            'event_name': np.uint8,
+            'name': np.uint8,
+            'fqid': np.uint8,
+            'room_fqid': np.uint8,
+            'text_fqid': np.uint8,
+            'fullscreen': np.uint8,
+            'hq': np.uint8,
+            'music': np.uint8,
+            'hover_duration_mean': np.float32,
+            'difference_clicks_mean': np.float32,
+            "distance_clicks_mean": np.float32,
+            "screen_distance_clicks_mean": np.float32,            
+            'elapsed_time_std': np.float32,
+            'page_std': np.float32,
+            'room_coor_x_std': np.float32,
+            'room_coor_y_std': np.float32,
+            'screen_coor_x_std': np.float32,
+            'screen_coor_y_std': np.float32,
+            'hover_duration_std': np.float32,
+            'difference_clicks_std': np.float32,
+            "distance_clicks_std": np.float32,
+            "screen_distance_clicks_std": np.float32,
+            'index_sum_of_actions': np.int32,
+            'difference_clicks_max': np.float32,
+            'elapsed_time_max': np.float32,
+            'clicks_per_second': np.float32,
+            "sum_distance_clicks_max": np.float32,
+        }
+        
+    # Read in the CSV file
+    if n_rows is None:
+        df = pd.read_csv(file_path, dtype=dtypes, index_col = 0)
+    else:
+        df = pd.read_csv(file_path, dtype=dtypes, nrows=n_rows, index_col= 0)
+    
+    # Set data types for columns with "_i" index in their name
+    row, cols = df.shape
+    if cols > 50:
+        for column in df.columns:
+            base_name = column.rsplit('_', 1)[0]  # get the base name by splitting on the last "_" character
+            if base_name in dtypes:
+                column_number = column.rsplit('_', 1)[1]  # get the number from the index by splitting on the last "_" character
+                new_column_name = f"{base_name}_{column_number}"  # construct the new column name
+                column_dtype = dtypes[base_name]
+                df[new_column_name] = df[column].astype(column_dtype)  # set the same data type for all columns with the same base name
+
+    return df
 
 def clear_memory(keep=None):
     if keep is None:
@@ -18,6 +72,7 @@ def clear_memory(keep=None):
     gc.collect()
 
 def adding_new_variables_rescaling(dataset_df):
+    
     dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])
     dataset_df['elapsed_time'] = dataset_df['elapsed_time']/1000
     group = dataset_df.groupby(['session_id','level'])['elapsed_time'].diff()
@@ -27,6 +82,11 @@ def adding_new_variables_rescaling(dataset_df):
     return dataset_df
 
 def feature_engineer_steve(dataset_df):
+    CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
+    NUMERICALmean = ['hover_duration','difference_clicks', "distance_clicks", "screen_distance_clicks"]
+    NUMERICALstd = ['elapsed_time','page', 'hover_duration', 'difference_clicks',"distance_clicks", "screen_distance_clicks"]
+    COUNTING = ['index']
+    MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
     dfs = []
     tmp = dataset_df.groupby(['session_id','level'])["level_group"].first()
     tmp.name = tmp.name 
@@ -113,12 +173,6 @@ def adding_euclid_distance_sum_variable(dataset_df):
     cumsum_distance_clicks_max = dataset_df.groupby(['session_id'])['distance_clicks'].sum()
     new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
     return new_df
-    # Replace NaN values in the 'distance_clicks' column with 0
-    dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
-    # Compute the sum of the 'distance_clicks' column within each session and picks the max
-    cumsum_distance_clicks_max = dataset_df.groupby('session_id', "level")['distance_clicks'].sum()
-    new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
-    return new_df
 
 def split_level_groups(df):
     # Split the dataframe into three different ones depending on the level group
@@ -138,9 +192,10 @@ def split_level_groups(df):
     df_13_22 = result['13-22']
 
     # Sort each dataframe by "session_id" and "level"
-    df_0_4 = df_0_4.sort_values(['session_id', 'level'])
-    df_5_12 = df_5_12.sort_values(['session_id', 'level'])
-    df_13_22 = df_13_22.sort_values(['session_id', 'level'])
+    df_0_4 = df_0_4.sort_values(['session_id', 'level']).reset_index(drop=False)
+    df_5_12 = df_5_12.sort_values(['session_id', 'level']).reset_index(drop=False)
+    df_13_22 = df_13_22.sort_values(['session_id', 'level']).reset_index(drop=False)
+
 
     # Return the resulting dataframes
     return df_0_4, df_5_12, df_13_22
@@ -194,6 +249,7 @@ def combine_rows(df, n_flatten=5, only_one=None, drop=None):
 def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
     # Use value_counts() to get the count of each session_id
     counts = df['session_id'].value_counts()
+    df['level'] = df['level'].astype(np.uint8)
 
     # Check if each group has the same number of rows
     if (counts % n_flatten).any():
@@ -257,53 +313,6 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
     df = df.reset_index(drop=True)
     df3["level_group"] = level_g
     return df, df2, df3
-def load_train_data(file_path: str, dtypes: dict = None, n_rows: int = None):
-    # If dtypes is not specified, set default data types for each column
-    if dtypes is None:
-        dtypes = {
-            'level': np.uint8,  
-            'session_id': np.int64,
-            'level_group': 'category',
-            'event_name': np.uint8,
-            'name': np.uint8,
-            'fqid': np.uint8,
-            'room_fqid': np.uint8,
-            'text_fqid': np.uint8,
-            'fullscreen': np.uint8,
-            'hq': np.uint8,
-            'music': np.uint8,
-            'hover_duration_mean': np.float32,
-            'difference_clicks_mean': np.float32,
-            'elapsed_time_std': np.float32,
-            'page_std': np.float32,
-            'room_coor_x_std': np.float32,
-            'room_coor_y_std': np.float32,
-            'screen_coor_x_std': np.float32,
-            'screen_coor_y_std': np.float32,
-            'hover_duration_std': np.float32,
-            'difference_clicks_std': np.float32,
-            'index_sum_of_actions': np.int32,
-            'difference_clicks_max': np.float32,
-            'elapsed_time_max': np.float32,
-            'clicks_per_second': np.float32
-        }
-        
-    # Read in the CSV file
-    if n_rows is None:
-        df = pd.read_csv(file_path, dtype=dtypes, index_col = 0)
-    else:
-        df = pd.read_csv(file_path, dtype=dtypes, nrows=n_rows, index_col= 0)
-    
-    # Set data types for columns with "_i" index in their name
-    for column in df.columns:
-        base_name = column.rsplit('_', 1)[0]  # get the base name by splitting on the last "_" character
-        if base_name in dtypes:
-            column_number = column.rsplit('_', 1)[1]  # get the number from the index by splitting on the last "_" character
-            new_column_name = f"{base_name}_{column_number}"  # construct the new column name
-            column_dtype = dtypes[base_name]
-            df[new_column_name] = df[column].astype(column_dtype)  # set the same data type for all columns with the same base name
-
-    return df
 
 #because i dont want to delete eversthing 
 
