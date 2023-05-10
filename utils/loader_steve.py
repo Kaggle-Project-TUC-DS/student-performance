@@ -12,7 +12,7 @@ import pandas as pd
 import pandas as pd
 import numpy as np
 
-def load_train_data(file_path: str, dtypes: dict = None, n_rows: int = None):
+def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
     # If dtypes is not specified, set default data types for each column
     if dtypes is None:
         dtypes = {
@@ -50,13 +50,15 @@ def load_train_data(file_path: str, dtypes: dict = None, n_rows: int = None):
         df = pd.read_csv(file_path, dtype=dtypes, nrows=n_rows, index_col= 0)
     
     # Set data types for columns with "_i" index in their name
-    for column in df.columns:
-        base_name = column.rsplit('_', 1)[0]  # get the base name by splitting on the last "_" character
-        if base_name in dtypes:
-            column_number = column.rsplit('_', 1)[1]  # get the number from the index by splitting on the last "_" character
-            new_column_name = f"{base_name}_{column_number}"  # construct the new column name
-            column_dtype = dtypes[base_name]
-            df[new_column_name] = df[column].astype(column_dtype)  # set the same data type for all columns with the same base name
+    row, cols = df.shape
+    if cols > 50:
+        for column in df.columns:
+            base_name = column.rsplit('_', 1)[0]  # get the base name by splitting on the last "_" character
+            if base_name in dtypes:
+                column_number = column.rsplit('_', 1)[1]  # get the number from the index by splitting on the last "_" character
+                new_column_name = f"{base_name}_{column_number}"  # construct the new column name
+                column_dtype = dtypes[base_name]
+                df[new_column_name] = df[column].astype(column_dtype)  # set the same data type for all columns with the same base name
 
     return df
 
