@@ -49,7 +49,7 @@ dataset_df = adding_euclid_distance_cumsum_variable(dataset_df)
 
 #save the raw data with added variables
 
-#dataset_df.to_csv('data/processed/df_added_variables.csv')
+dataset_df.to_csv('data/processed/df_added_variables.csv')
 
 #Define which variables get which treatement from the added dataset 
 CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
