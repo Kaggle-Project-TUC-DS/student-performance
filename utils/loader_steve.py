@@ -29,6 +29,8 @@ def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
             'music': np.uint8,
             'hover_duration_mean': np.float32,
             'difference_clicks_mean': np.float32,
+            "distance_clicks_mean": np.float32,
+            "screen_distance_clicks_mean": np.float32,            
             'elapsed_time_std': np.float32,
             'page_std': np.float32,
             'room_coor_x_std': np.float32,
@@ -37,10 +39,13 @@ def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
             'screen_coor_y_std': np.float32,
             'hover_duration_std': np.float32,
             'difference_clicks_std': np.float32,
+            "distance_clicks_std": np.float32,
+            "screen_distance_clicks_std": np.float32,
             'index_sum_of_actions': np.int32,
             'difference_clicks_max': np.float32,
             'elapsed_time_max': np.float32,
-            'clicks_per_second': np.float32
+            'clicks_per_second': np.float32,
+            "sum_distance_clicks_max": np.float32,
         }
         
     # Read in the CSV file
