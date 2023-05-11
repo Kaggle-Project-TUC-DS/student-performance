@@ -82,7 +82,7 @@ df_0_4, df_5_12,df_13_22 = split_level_groups(dataset_df)
 #specify columns we want to exclude for the flattening ex: will only be present one time 
 # #(we only need the music information one time and not for every level)
 #drop drop the coloumn completely. level is not required anymore
-ex = ["level_group","music", "hq", "fullscreen"]
+ex = ["level_group","music", "hq", "fullscreen", "session_id"]
 drop = ["level"]
 
 #df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)

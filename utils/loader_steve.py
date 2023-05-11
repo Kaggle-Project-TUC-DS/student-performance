@@ -12,7 +12,7 @@ import pandas as pd
 import pandas as pd
 import numpy as np
 
-def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
+def load_data(file_path: str , dtypes: dict = None, n_rows: int = None):
     # If dtypes is not specified, set default data types for each column
     if dtypes is None:
         dtypes = {
@@ -66,4 +66,30 @@ def load_train_data(file_path: str , dtypes: dict = None, n_rows: int = None):
                 df[new_column_name] = df[column].astype(column_dtype)  # set the same data type for all columns with the same base name
 
     return df
+
+
+def load_labels(file_path: str = 'data/processed/labels.csv', dtypes: dict = None, n_rows: int = None) -> pd.DataFrame:
+    if dtypes is None:
+        dtypes= {
+            'session': np.int64,
+            'correct': np.uint8, 
+            'q':np.uint8
+            }
+    # Read in the CSV file
+    if n_rows is None:
+        labels = pd.read_csv(file_path, dtype=dtypes, index_col = 0)
+    else:
+        labels = pd.read_csv(file_path, dtype=dtypes, nrows=n_rows, index_col= 0)
+
+    return labels
+
+
+def load_X_y(file_path_data: str, 
+             file_path_labels: str = 'data/processed/labels.csv', 
+             dtypes_data: dict = None, 
+             dtypes_labels: dict = None, 
+             n_rows: int = None):
+    df = load_data(file_path=file_path_data, dtypes=dtypes_data, n_rows=n_rows)
+    labels = load_labels(file_path=file_path_labels, dtypes=dtypes_labels, n_rows=n_rows)
+    return (df, labels)
 

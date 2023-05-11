@@ -1,0 +1,14 @@
+Notes:
+- feature engineering with saved dataframes by stephan
+- feature engineering by martin
+- feature exploration by martin
+- testing models marvin, noah
+- Mergen
+
+Aufgaben:
+- feature exploration (Martin)
+- decision tree / forests / boosting (Stephan)
+- majority vote & other models & bissle feature scaling (Marvin)
+- other models (Noah)
+- submission process (Noah)
+- Johannes ?
