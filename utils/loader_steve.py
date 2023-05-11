@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import Tuple
 #in this file we will collect the functions/utilities to load the preprocessed data for training purposes
 #to do- merge the different preprocessing files and create 1 preprocessing function
 #Stephan and Johannes
@@ -84,12 +85,40 @@ def load_labels(file_path: str = 'data/processed/labels.csv', dtypes: dict = Non
     return labels
 
 
-def load_X_y(file_path_data: str, 
-             file_path_labels: str = 'data/processed/labels.csv', 
-             dtypes_data: dict = None, 
-             dtypes_labels: dict = None, 
-             n_rows: int = None):
-    df = load_data(file_path=file_path_data, dtypes=dtypes_data, n_rows=n_rows)
+def load_level_group_X_y(
+        level_group: str,
+        data_version: str = 'flattened', 
+        dtypes_data: dict = None, 
+        dtypes_labels: dict = None, 
+        n_rows: int = None) -> Tuple(pd.DataFrame, pd.DataFrame):
+    
+    if data_version == 'flattened':
+        if level_group == '0_4':
+            df = load_data(file_path='data/processed/df_0_4_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+            labels = load_labels(file_path='data/processed/labels_q1-3.csv', dtypes=dtypes_labels, n_rows=n_rows)
+        elif level_group == '5_12':
+            df = load_data(file_path='data/processed/df_5_12_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+            labels = load_labels(file_path='data/processed/labels_q4-13.csv', dtypes=dtypes_labels, n_rows=n_rows)
+        elif level_group == '13_22':
+            df = load_data(file_path='data/processed/df_13_22_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+            labels = load_labels(file_path='data/processed/labels_q14-22.csv', dtypes=dtypes_labels, n_rows=n_rows)
+
+    return (df, labels)
+
+
+def load_all_X_y(
+        data: str = 'flattened', 
+        file_path_labels: str = 'data/processed/labels.csv', 
+        dtypes_data: dict = None, 
+        dtypes_labels: dict = None, 
+        n_rows: int = None) -> Tuple(dict, pd.DataFrame):
+    """Load all data and labels. Return a dictionary of dataframes and a dataframe of labels."""
+    if data == 'flattened':
+        df_0_4 = load_data(file_path='data/processed/df_0_4_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+        df_5_12 = load_data(file_path='data/processed/df_5_12_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+        df_13_22 = load_data(file_path='data/processed/df_13_22_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
+        df = dict({'0_4': df_0_4, '5_12': df_5_12, '13_22': df_13_22})
+
     labels = load_labels(file_path=file_path_labels, dtypes=dtypes_labels, n_rows=n_rows)
     return (df, labels)
 
