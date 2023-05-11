@@ -1,2 +1,0 @@
-rclone mount --drive-shared-with-me gdrive:Student-performance-data/data –/<your-path>/student-performance/data --allow-other --config –/.config/rclone/rclone.conf &
-
