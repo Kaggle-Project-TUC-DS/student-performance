@@ -5,7 +5,7 @@ import matplotlib as plt
 import os
 import gc
 from typing import Tuple
-from preprocessing_func import load_train_data
+from loader_steve import load_train_data
 #set wd
 # get working directory and remove last folder
 # TODO: make this more robust
@@ -82,7 +82,7 @@ df_0_4, df_5_12,df_13_22 = split_level_groups(dataset_df)
 #specify columns we want to exclude for the flattening ex: will only be present one time 
 # #(we only need the music information one time and not for every level)
 #drop drop the coloumn completely. level is not required anymore
-ex = ["level_group","music", "hq", "fullscreen"]
+ex = ["session_id", "level_group","music", "hq", "fullscreen"]
 drop = ["level"]
 
 #df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
