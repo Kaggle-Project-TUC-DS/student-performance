@@ -101,7 +101,7 @@ def load_level_group_X_y(
             labels = load_labels(file_path='data/processed/labels_q4-13.csv', dtypes=dtypes_labels, n_rows=n_rows)
         elif level_group == '13_22':
             df = load_data(file_path='data/processed/df_13_22_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
-            labels = load_labels(file_path='data/processed/labels_q14-22.csv', dtypes=dtypes_labels, n_rows=n_rows)
+            labels = load_labels(file_path='data/processed/labels_q14-18.csv', dtypes=dtypes_labels, n_rows=n_rows)
 
     return (df, labels)
 
