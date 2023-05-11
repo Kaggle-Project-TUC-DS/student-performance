@@ -90,7 +90,7 @@ def load_level_group_X_y(
         data_version: str = 'flattened', 
         dtypes_data: dict = None, 
         dtypes_labels: dict = None, 
-        n_rows: int = None) -> Tuple(pd.DataFrame, pd.DataFrame):
+        n_rows: int = None) -> Tuple[(pd.DataFrame, pd.DataFrame)]:
     
     if data_version == 'flattened':
         if level_group == '0_4':
@@ -111,14 +111,15 @@ def load_all_X_y(
         file_path_labels: str = 'data/processed/labels.csv', 
         dtypes_data: dict = None, 
         dtypes_labels: dict = None, 
-        n_rows: int = None) -> Tuple(dict, pd.DataFrame):
+        n_rows: int = None) -> Tuple[(dict, pd.DataFrame)]:
     """Load all data and labels. Return a dictionary of dataframes and a dataframe of labels."""
     if data == 'flattened':
         df_0_4 = load_data(file_path='data/processed/df_0_4_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
         df_5_12 = load_data(file_path='data/processed/df_5_12_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
         df_13_22 = load_data(file_path='data/processed/df_13_22_flattened.csv', dtypes=dtypes_data, n_rows=n_rows)
-        df = dict({'0_4': df_0_4, '5_12': df_5_12, '13_22': df_13_22})
+        dict_dfs = dict({'0_4': df_0_4, '5_12': df_5_12, '13_22': df_13_22})
 
     labels = load_labels(file_path=file_path_labels, dtypes=dtypes_labels, n_rows=n_rows)
-    return (df, labels)
+    return (dict_dfs, labels)
+
 
