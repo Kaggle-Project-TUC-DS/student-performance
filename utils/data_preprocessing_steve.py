@@ -4,19 +4,20 @@ import pandas as pd
 import matplotlib as plt
 import os
 import gc
+from typing import Tuple
+from preprocessing_func import load_train_data
+#set wd
+# get working directory and remove last folder
+# TODO: make this more robust
+#wd = os.path.dirname(os.getcwd())
+#os.chdir(wd)
+print('Working Directory: ', os.getcwd())
+#Code
+#############################################################################
+#############################################################################
 
-#function to delete variables from memory
-def clear_memory(keep=None):
-    if keep is None:
-        keep = []
-    for name in list(globals().keys()):
-        if not name.startswith('_') and name not in keep:
-            value = globals()[name]
-            if isinstance(value, pd.DataFrame):
-                del globals()[name]
-    gc.collect()
-
-dtypes={
+#Load in the Raw Dataset
+dtypes_raw={
     'elapsed_time':np.int32,
     'event_name':'category',
     'name':'category',
@@ -36,233 +37,87 @@ dtypes={
     'music':'category',
     'level_group':'category'}
 
-dataset_df = pd.read_csv('/Users/nzuchna/Library/CloudStorage/GoogleDrive-s1068886@stud.sbg.ac.at/My Drive/Student-performance-data/data/raw/train.csv', dtype=dtypes)
+dataset_df = load_train_data(file_path= "data/raw/train.csv", dtypes= dtypes_raw)
 
-###Function to add variables to the whole dataset
-
-
-def adding_new_variables_rescaling(dataset_df):
-    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])
-    dataset_df['elapsed_time'] = dataset_df['elapsed_time']/1000
-    group = dataset_df.groupby(['session_id','level'])['elapsed_time'].diff()
-    group = group.fillna(value= 0)
-    dataset_df= dataset_df.assign(difference_clicks = group)
-
-    return dataset_df
-
-#Function to clean the sequential data for the training of the model
-
-#For that Function to work we need to specify the variables in Categorical and Numerical & Counting
-
-CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
-NUMERICALmean = ['hover_duration','difference_clicks']
-NUMERICALstd = ['elapsed_time','page','room_coor_x', 'room_coor_y', 'screen_coor_x', 'screen_coor_y', 'hover_duration', 'difference_clicks']
-COUNTING = ['index']
-MAXIMUM = ['difference_clicks', 'elapsed_time']
-
-
-
-def feature_engineer_steve(dataset_df):
-    dfs = []
-    tmp = dataset_df.groupby(['session_id','level'])["level_group"].first()
-    tmp.name = tmp.name 
-    dfs.append(tmp)
-    for c in CATEGORICAL:
-        if c not in ['fullscreen', 'hq', 'music']:
-            tmp = dataset_df.groupby(['session_id','level'])[c].agg('nunique')
-        else:
-            tmp = dataset_df.groupby(['session_id','level'])[c].first().astype(int).fillna(0)
-        dfs.append(tmp)
-    for c in NUMERICALmean:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('mean')
-        tmp.name = tmp.name + '_mean'
-        dfs.append(tmp)
-    for c in NUMERICALstd:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('std')
-        tmp.name = tmp.name + '_std'
-        dfs.append(tmp)    
-    for c in COUNTING:
-        tmp = 1+ dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
-        tmp.name = tmp.name + '_sum_of_actions'
-        dfs.append(tmp)
-    for c in MAXIMUM:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
-        tmp.name = tmp.name + '_max'
-        dfs.append(tmp)
-    
-    dataset_df = pd.concat(dfs,axis=1)
-    dataset_df = dataset_df.fillna(-1)
-    dataset_df = dataset_df.reset_index()
-    dataset_df = dataset_df.set_index('session_id') 
-    
-# add Clicks per second afterwards cause we need the time for each level first
-    dataset_df['clicks_per_second'] = dataset_df['index_sum_of_actions']/ dataset_df['elapsed_time_max']
- 
-    return dataset_df
-
-import pandas as pd
-import numpy as np
-#do not use this one it uses a lot of memory
-def flatten_df(dataset_df_level, exclude=[]): 
-    #split the dataframe into three different ones depending on the level group
-    groups = dataset_df_level.groupby('level_group')
-
-    # Create a dictionary to store the resulting dataframes
-    result = {}
-
-    # Loop over each group
-    for name, group in groups:
-        # Add the group to the result dictionary
-        result[name] = group
-
-    # Access the resulting dataframes using their keys
-    df_0_4 = result['0-4']
-    df_5_12 = result['5-12']
-    df_13_22 = result['13-22']
-
-    dfs = [df_0_4, df_5_12, df_13_22]
-    flattened_dfs = []
-
-    for df in dfs:
-        # create a new index col
-        df = df.reset_index()
-        df['_index'] = df.index + 1
-        df = df.set_index('_index')
-        df = df.drop(["level_group"], axis= 1)
-
-        # get the unique session_ids and columns
-        session_ids = df['session_id'].unique()
-        cols = ['session_id'] + [f'{col}_{i+1}' for i in range(len(session_ids)) for col in df.columns if col != 'session_id']
-
-        # create a new dataframe to hold the flattened data
-        new_df = pd.DataFrame(columns=cols)
-
-        # define a function to apply to each group
-        def flatten_group(group):
-            # combine the columns into a single row
-            row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for col in group.columns if col != 'session_id'] 
-            # add None values to the row if necessary to make it the same length as the columns
-            if len(row_data) < len(cols) - 1:
-                row_data += [np.nan] * (len(cols) - len(row_data) - 1)
-            # add the session_id to the beginning of the row
-            row_data = [group['session_id'].iloc[0]] + row_data
-            return pd.Series(row_data, index=cols)
-
-        # apply the function to each group and concatenate the results
-        new_df = pd.concat([flatten_group(group) for _, group in df.groupby('session_id')], axis=1).T
-
-        # fill NaN values with np.nan
-        new_df = new_df.fillna(np.nan)
-
-        # convert the columns back to their original datatypes
-        for col in df.columns:
-            if col != 'session_id':
-                new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]] = new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
-
-        # sort the columns
-        new_df = new_df[cols]
-
-        # remove columns that contain only NaN values
-        new_df = new_df.dropna(axis=1, how='all')
-
-        # remove specified columns from exclude list
-        for col_name in exclude:
-            new_df = new_df[[col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
-
-        flattened_dfs.append(new_df)
-
-    return flattened_dfs[0], flattened_dfs[1], flattened_dfs[2]
-
-def flatten_df_one_at_a_time(df, exclude=[]):
-    # create a new index col
-    df = df.reset_index()
-    df['_index'] = df.index + 1
-    df = df.set_index('_index')
-    df = df.drop(["level_group"], axis=1)
-
-    # get the unique session_ids and columns
-    session_ids = df['session_id'].unique()
-    cols = ['session_id'] + [f'{col}_{i+1}' for i in range(len(session_ids)) for col in df.columns if col != 'session_id']
-
-    # create a new dataframe to hold the flattened data
-    new_df = pd.DataFrame(columns=cols)
-
-    # define a function to apply to each group
-    def flatten_group(group):
-        # combine the columns into a single row
-        row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for col in group.columns if col != 'session_id']
-        # add None values to the row if necessary to make it the same length as the columns
-        if len(row_data) < len(cols) - 1:
-            row_data += [np.nan] * (len(cols) - len(row_data) - 1)
-        # add the session_id to the beginning of the row
-        row_data = [group['session_id'].iloc[0]] + row_data
-        return pd.Series(row_data, index=cols)
-
-    # apply the function to each group and concatenate the results
-    new_df = pd.concat([flatten_group(group) for _, group in df.groupby('session_id')], axis=1).T
-
-    # fill NaN values with np.nan
-    new_df = new_df.fillna(np.nan)
-
-    # convert the columns back to their original datatypes
-    for col in df.columns:
-        if col != 'session_id':
-            new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]] = new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
-
-    # sort the columns
-    new_df = new_df[cols]
-
-    # remove columns that contain only NaN values
-    new_df = new_df.dropna(axis=1, how='all')
-
-    # remove specified columns from exclude list
-    for col_name in exclude:
-        new_df = new_df[[col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
-
-    return new_df
-
-
-#for be
+from preprocessing_func import adding_new_variables_rescaling
 dataset_df = adding_new_variables_rescaling(dataset_df)
+#Martins additional values
+from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, adding_euclid_distance_cumsum_variable 
+dataset_df = adding_screen_distance_clicks_variable(dataset_df) 
+dataset_df = adding_euclid_distance_variable(dataset_df)
+dataset_df = adding_euclid_distance_cumsum_variable(dataset_df)
+
+#save the raw data with added variables
+
+dataset_df.to_csv('data/processed/df_added_variables.csv')
+
+#Define which variables get which treatement from the added dataset 
+CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
+NUMERICALmean = ['hover_duration','difference_clicks', "distance_clicks", "screen_distance_clicks"]
+NUMERICALstd = ['elapsed_time','page', 'hover_duration', 'difference_clicks',"distance_clicks", "screen_distance_clicks"]
+COUNTING = ['index']
+MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
+#copy them into the feature engeneer function
+
+#Careful, werid fix of a problem: when changing the categories and variables. copy them into the right place in the deature engeneer function. 
+#they cant be loaded across the files. 
+from preprocessing_func import feature_engineer_steve
+
 dataset_df = feature_engineer_steve(dataset_df)
 
-#split the dataframe into three different ones depending on the level group
-dataset_df = dataset_df.groupby('level_group')
+#save the leveled data (aggregated)
+dataset_df.to_csv('data/processed/df_level.csv')
 
-# Create a dictionary to store the resulting dataframes
-result = {}
-# Loop over each group
-for name, group in dataset_df:
-    # Add the group to the result dictionary
-    result[name] = group
+from preprocessing_func import split_level_groups
+#split the dataset into three parts based on level group
+df_0_4, df_5_12,df_13_22 = split_level_groups(dataset_df)
 
-# Access the resulting dataframes using their keys
-df_0_4 = result['0-4']
-df_5_12 = result['5-12']
-df_13_22 = result['13-22']
-
-clear_memory(keep= ["df_0_4", "df_5_12","df_13_22"])
-
-#specify columns we want to exclude for the flattening
-ex = ["level", "music","hq","fullscreen"]
+#load the data
+# df_0_4 = pd.read_csv("data\processed\df_0_4.csv", dtype=dtypes, index_col= 0)
+# df_0_4 = df_0_4.reset_index(drop=True)
+# df_5_12 = pd.read_csv("data\processed\df_5_12.csv", dtype=dtypes, index_col= 0)
+# df_5_12 = df_5_12.reset_index(drop=True)
+# df_13_22 = pd.read_csv("data\processed\df_13_22.csv", dtype=dtypes, index_col= 0)
+# df_13_22 = df_13_22.reset_index(drop=True)
+#specify columns we want to exclude for the flattening ex: will only be present one time 
+# #(we only need the music information one time and not for every level)
+#drop drop the coloumn completely. level is not required anymore
+ex = ["level_group","music", "hq", "fullscreen", "session_id"]
+drop = ["level"]
 
 #df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
 #make the dataframe, save it and delete it to save memory
-df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+#df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+from preprocessing_func import generate_rows, combine_rows, clear_memory
+
+df_0_4, df0_4_missing_sessions, df0_4_new_rows = generate_rows(df_0_4,n_flatten= 5, level_g= "0-4")
+df_0_4 = combine_rows(df_0_4,n_flatten= 5 ,drop= drop, only_one= ex)
 df_0_4.to_csv('data/processed/df_0_4_flattened.csv')
 
-clear_memory(keep=["df_5_12","df_13_22"])
+#clear_memory(keep=["df_5_12","df_13_22"])
 
 
-df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
+#df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
+df_5_12, df5_12_missing_sessions, df5_12_new_rows = generate_rows(df_5_12,n_flatten= 8, level_g= "5-12")
+df_5_12 = combine_rows(df_5_12,n_flatten= 8 ,drop= drop, only_one= ex)
 df_5_12.to_csv('data/processed/df_5_12_flattened.csv')
 
-clear_memory(keep= ["df_13_22"])
+#clear_memory(keep= ["df_13_22"])
 
-df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
+#df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
+df_13_22, df13_22_missing_sessions, df13_22_new_rows = generate_rows(df_13_22,n_flatten= 10, level_g= "13-22")
+df_13_22 = combine_rows(df_13_22,n_flatten= 10 ,drop= drop, only_one= ex)
 df_13_22.to_csv('data/processed/df_13_22_flattened.csv')
 # Export results
-
+#export the generated rows in a seperated df to controll later
+df_generated_rows = pd.concat([df0_4_new_rows,df5_12_new_rows, df13_22_new_rows])
+df_generated_rows.to_csv('data/processed/df_generated_rows.csv')
 
 #'df_5_12_flattened.to_csv('data/processed/df_5_12_flattened.csv')
 #'df_13_22_flattened.to_csv('data/processed/df_13_22_flattened.csv')
+
+
+
+
+#############################################################################
+#############################################################################
