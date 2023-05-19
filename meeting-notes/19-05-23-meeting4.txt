@@ -1,0 +1,14 @@
+Notes:
+- XGBoost mit Optuna mit minimalen Verbesserungen, test data score abwarten (Stephan)
+- submission ongoing (Noah)
+- Logistische Regression (Johannes)
+- BorderLineSMOTE (Marvin)
+- SVM Comeback (Marvin)
+- Naive Classifier (Marvin)
+
+Aufgaben:
+- Submission & NN (Noah & Johannes)
+- SVM & beyond (Marvin)
+- EDA (Martin)
+- XGBoost evaluieren (Stephan)
+- Modelle auf Testdaten laufen lassen !!! (Alle)
