@@ -123,3 +123,28 @@ def load_all_X_y(
     return (dict_dfs, labels)
 
 
+def load_all_as_dict(
+        data: str = 'flattened', 
+        file_path_labels: str = 'data/processed/labels.csv', 
+        dtypes_data: dict = None, 
+        dtypes_labels: dict = None, 
+        n_rows: int = None) -> dict:
+    """Load all data and labels. Return a dictionary of dataframes and a dataframe of labels."""
+    dict_dfs, labels = load_all_X_y(
+        data=data, 
+        file_path_labels=file_path_labels, 
+        dtypes_data=dtypes_data, 
+        dtypes_labels=dtypes_labels, 
+        n_rows=n_rows)
+    dict_all = {}
+    for q in labels['q'].unique():
+        if q <= 3:
+            dict_all[q] = {'X': dict_dfs['0_4'].iloc[:, 2:].values, 
+                           'y': labels['correct'][labels['q'] == q].values}
+        elif q <= 13:
+            dict_all[q] = {'X': dict_dfs['5_12'].iloc[:, 2:].values, 
+                           'y': labels['correct'][labels['q'] == q].values}
+        elif q <= 18:
+            dict_all[q] = {'X': dict_dfs['13_22'].iloc[:, 2:].values, 
+                           'y': labels['correct'][labels['q'] == q].values}
+    return dict_all
