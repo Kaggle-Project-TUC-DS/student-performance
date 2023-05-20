@@ -17,91 +17,98 @@ def clear_memory(keep=None):
                 del globals()[name]
     gc.collect()
 
+
 def adding_new_variables_rescaling(dataset_df):
-    
-    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])
-    dataset_df['elapsed_time'] = dataset_df['elapsed_time']/1000
-    group = dataset_df.groupby(['session_id','level'])['elapsed_time'].diff()
-    group = group.fillna(value= 0)
-    dataset_df= dataset_df.assign(difference_clicks = group)
+    dataset_df = dataset_df.sort_values(['session_id', 'elapsed_time'])
+    dataset_df['elapsed_time'] = dataset_df['elapsed_time'] / 1000
+    group = dataset_df.groupby(['session_id', 'level'])['elapsed_time'].diff()
+    group = group.fillna(value=0)
+    dataset_df = dataset_df.assign(difference_clicks=group)
 
     return dataset_df
 
+
 def feature_engineer_steve(dataset_df):
     CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
-    NUMERICALmean = ['hover_duration','difference_clicks', "distance_clicks", "screen_distance_clicks"]
-    NUMERICALstd = ['elapsed_time','page', 'hover_duration', 'difference_clicks',"distance_clicks", "screen_distance_clicks"]
+    NUMERICALmean = ['hover_duration', 'difference_clicks', "distance_clicks", "screen_distance_clicks"]
+    NUMERICALstd = ['elapsed_time', 'page', 'hover_duration', 'difference_clicks', "distance_clicks",
+                    "screen_distance_clicks"]
     COUNTING = ['index']
     MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
     dfs = []
-    tmp = dataset_df.groupby(['session_id','level'])["level_group"].first()
-    tmp.name = tmp.name 
+    tmp = dataset_df.groupby(['session_id', 'level'])["level_group"].first()
+    tmp.name = tmp.name
     dfs.append(tmp)
     for c in CATEGORICAL:
         if c not in ['fullscreen', 'hq', 'music']:
-            tmp = dataset_df.groupby(['session_id','level'])[c].agg('nunique')
+            tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('nunique')
         else:
-            tmp = dataset_df.groupby(['session_id','level'])[c].first().astype(int).fillna(0)
+            tmp = dataset_df.groupby(['session_id', 'level'])[c].first().astype(int).fillna(0)
         dfs.append(tmp)
     for c in NUMERICALmean:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('mean')
+        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('mean')
         tmp.name = tmp.name + '_mean'
         dfs.append(tmp)
     for c in NUMERICALstd:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('std')
+        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('std')
         tmp.name = tmp.name + '_std'
-        dfs.append(tmp)    
+        dfs.append(tmp)
     for c in COUNTING:
-        tmp = 1+ dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
+        tmp = 1 + dataset_df.groupby(['session_id', 'level'])[c].agg('max') - \
+              dataset_df.groupby(['session_id', 'level'])[c].agg('min')
         tmp.name = tmp.name + '_sum_of_actions'
         dfs.append(tmp)
     for c in MAXIMUM:
-        tmp = dataset_df.groupby(['session_id','level'])[c].agg('max')- dataset_df.groupby(['session_id','level'])[c].agg('min') 
+        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('max') - dataset_df.groupby(['session_id', 'level'])[
+            c].agg('min')
         tmp.name = tmp.name + '_max'
         dfs.append(tmp)
-    
+
     # add martins sum of movement in level
-    #happens before
-    #dataset_df = adding_euclid_distance_sum_variable(dataset_df) #at this time is think it is just returning a single value and does not add anything to cumsum
-    
-    dataset_df = pd.concat(dfs,axis=1)
+    # happens before
+    # dataset_df = adding_euclid_distance_sum_variable(dataset_df) #at this time is think it is just returning a single value and does not add anything to cumsum
+
+    dataset_df = pd.concat(dfs, axis=1)
     dataset_df = dataset_df.fillna(-1)
     dataset_df = dataset_df.reset_index()
-    dataset_df = dataset_df.set_index('session_id') 
-    
+    dataset_df = dataset_df.set_index('session_id')
+
     # add Clicks per second afterwards cause we need the time for each level first
     dataset_df['clicks_per_second'] = dataset_df['index_sum_of_actions'] / dataset_df['elapsed_time_max']
     dataset_df["clicks_per_second"].replace([np.inf, -np.inf], 0, inplace=True)
-    
 
     return dataset_df
 
 
 def adding_euclid_distance_variable(dataset_df):
     # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
-    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])  
+    dataset_df = dataset_df.sort_values(['session_id', 'elapsed_time'])
     # Interpolate missing values in the 'room_coor_x' and 'room_coor_y' columns
-    coords = dataset_df.groupby(['session_id',"level"])[['room_coor_x', 'room_coor_y']].transform(lambda x: x.interpolate())   
+    coords = dataset_df.groupby(['session_id', "level"])[['room_coor_x', 'room_coor_y']].transform(
+        lambda x: x.interpolate())
     # Calculate the Euclidean distance between consecutive rows of the 'coords' DataFrame
-    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()  
+    distance_clicks = np.linalg.norm(coords.diff(), axis=1).squeeze()
     # Assign the calculated distances to a new column named 'distance_clicks'
-    new_df = dataset_df.assign(distance_clicks=distance_clicks)    
+    new_df = dataset_df.assign(distance_clicks=distance_clicks)
     # Reset the index of the resulting DataFrame
-    new_df.reset_index(inplace=True)    
+    new_df.reset_index(inplace=True)
     # Return the resulting DataFrame
     return new_df
 
+
 def adding_screen_distance_clicks_variable(dataset_df):
     # Sort the input DataFrame by the 'session_id' and 'elapsed_time' columns
-    dataset_df = dataset_df.sort_values(['session_id','elapsed_time'])    
+    dataset_df = dataset_df.sort_values(['session_id', 'elapsed_time'])
     # Interpolate missing values in the 'screen_coor_x' and 'screen_coor_y' columns
-    screen_coords = dataset_df.groupby(['session_id',"level"])[['screen_coor_x', 'screen_coor_y']].transform(lambda x: x.interpolate())
+    screen_coords = dataset_df.groupby(['session_id', "level"])[['screen_coor_x', 'screen_coor_y']].transform(
+        lambda x: x.interpolate())
     # Calculate the Euclidean distance between consecutive rows of the 'screen_coords' DataFrame
-    screen_distance_clicks = np.linalg.norm(screen_coords.diff(), axis=1).squeeze()    
+    screen_distance_clicks = np.linalg.norm(screen_coords.diff(), axis=1).squeeze()
     # Assign the calculated distances to a new column named 'screen_distance_clicks'
-    new_df = dataset_df.assign(screen_distance_clicks=screen_distance_clicks)     
+    new_df = dataset_df.assign(screen_distance_clicks=screen_distance_clicks)
     # Return the resulting DataFrame
     return new_df
+
 
 def adding_euclid_distance_cumsum_variable(dataset_df):
     # Replace NaN values in the 'distance_clicks' column with 0
@@ -109,18 +116,21 @@ def adding_euclid_distance_cumsum_variable(dataset_df):
     # Compute the cumulative sum of the 'distance_clicks' column within each session
     sum_distance_clicks = dataset_df.groupby(['session_id'])['distance_clicks'].cumsum()
     # Assign the computed cumulative sum to a new column 'sum_distance_clicks' in the original dataframe
-    new_df = dataset_df.assign(sum_distance_clicks=sum_distance_clicks) 
+    new_df = dataset_df.assign(sum_distance_clicks=sum_distance_clicks)
     return new_df
+
 
 def adding_euclid_distance_sum_variable(dataset_df):
     # Replace NaN values in the 'distance_clicks' column with 0
     dataset_df['distance_clicks'] = dataset_df['distance_clicks'].fillna(0)
     # Compute the sum of the 'distance_clicks' column within each session and picks the max
     cumsum_distance_clicks_max = dataset_df.groupby(['session_id'])['distance_clicks'].sum()
-    new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
+    new_df = dataset_df.assign(cumsum_distance_clicks_max=cumsum_distance_clicks_max)
     return new_df
 
-def split_level_groups(df):
+
+def split_level_groups(
+        df):  # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
     # Split the dataframe into three different ones depending on the level group
     groups = df.groupby('level_group')
 
@@ -142,9 +152,9 @@ def split_level_groups(df):
     df_5_12 = df_5_12.sort_values(['session_id', 'level']).reset_index(drop=False)
     df_13_22 = df_13_22.sort_values(['session_id', 'level']).reset_index(drop=False)
 
-
     # Return the resulting dataframes
     return df_0_4, df_5_12, df_13_22
+
 
 def combine_rows(df, n_flatten=5, only_one=None, drop=None):
     """
@@ -179,19 +189,21 @@ def combine_rows(df, n_flatten=5, only_one=None, drop=None):
 
     # Reshape the flattened values into a new array with the desired shape
     values = df.values.flatten()
-    new_values = values.reshape(num_new_rows, n_flatten*num_cols)
+    new_values = values.reshape(num_new_rows, n_flatten * num_cols)
 
     # Create a new DataFrame from the reshaped values
-    new_df = pd.DataFrame(new_values, columns=[f"{col}_{i}" for i in range(1, n_flatten+1) for col in df.columns])
+    new_df = pd.DataFrame(new_values, columns=[f"{col}_{i}" for i in range(1, n_flatten + 1) for col in df.columns])
 
     # Drop specified columns from output DataFrame
     if only_one:
         for col in only_one:
             keep_col = f"{col}_1"
-            drop_cols = [f"{col}_{i}" for i in range(2, n_flatten+1)]
+            drop_cols = [f"{col}_{i}" for i in range(2, n_flatten + 1)]
             new_df = new_df.drop(columns=drop_cols)
 
     return new_df
+
+
 def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
     # Use value_counts() to get the count of each session_id
     counts = df['session_id'].value_counts()
@@ -221,10 +233,11 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
                     for col in df.columns:
                         if col == "session_id" or col == "level":
                             continue
-                        
+
                         else:
                             # Numeric column - set value to average of other values in column with the same level
-                            other_values = df.loc[(df["session_id"] == session_id) & (df["level"] == missing_level), col]
+                            other_values = df.loc[
+                                (df["session_id"] == session_id) & (df["level"] == missing_level), col]
                             if other_values.dtype.kind in 'biufc':
                                 new_value = other_values.mean()
                                 if np.isnan(new_value):
@@ -260,11 +273,12 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
     df3["level_group"] = level_g
     return df, df2, df3
 
-#because i dont want to delete eversthing 
 
-#do not use this one it uses a lot of memory
-def flatten_df(dataset_df_level, exclude=[]): 
-    #split the dataframe into three different ones depending on the level group
+# because i dont want to delete eversthing
+
+# do not use this one it uses a lot of memory
+def flatten_df(dataset_df_level, exclude=[]):
+    # split the dataframe into three different ones depending on the level group
     groups = dataset_df_level.groupby('level_group')
 
     # Create a dictionary to store the resulting dataframes
@@ -288,11 +302,12 @@ def flatten_df(dataset_df_level, exclude=[]):
         df = df.reset_index()
         df['_index'] = df.index + 1
         df = df.set_index('_index')
-        df = df.drop(["level_group"], axis= 1)
+        df = df.drop(["level_group"], axis=1)
 
         # get the unique session_ids and columns
         session_ids = df['session_id'].unique()
-        cols = ['session_id'] + [f'{col}_{i+1}' for i in range(len(session_ids)) for col in df.columns if col != 'session_id']
+        cols = ['session_id'] + [f'{col}_{i + 1}' for i in range(len(session_ids)) for col in df.columns if
+                                 col != 'session_id']
 
         # create a new dataframe to hold the flattened data
         new_df = pd.DataFrame(columns=cols)
@@ -300,7 +315,8 @@ def flatten_df(dataset_df_level, exclude=[]):
         # define a function to apply to each group
         def flatten_group(group):
             # combine the columns into a single row
-            row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for col in group.columns if col != 'session_id'] 
+            row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for
+                        col in group.columns if col != 'session_id']
             # add None values to the row if necessary to make it the same length as the columns
             if len(row_data) < len(cols) - 1:
                 row_data += [np.nan] * (len(cols) - len(row_data) - 1)
@@ -317,7 +333,8 @@ def flatten_df(dataset_df_level, exclude=[]):
         # convert the columns back to their original datatypes
         for col in df.columns:
             if col != 'session_id':
-                new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]] = new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
+                new_df[[f'{col}_{i + 1}' for i in range(len(session_ids))]] = new_df[
+                    [f'{col}_{i + 1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
 
         # sort the columns
         new_df = new_df[cols]
@@ -327,11 +344,14 @@ def flatten_df(dataset_df_level, exclude=[]):
 
         # remove specified columns from exclude list
         for col_name in exclude:
-            new_df = new_df[[col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
+            new_df = new_df[
+                [col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
 
         flattened_dfs.append(new_df)
 
     return flattened_dfs[0], flattened_dfs[1], flattened_dfs[2]
+
+
 def flatten_df_one_at_a_time(df, exclude=[]):
     # create a new index col
     df = df.reset_index()
@@ -341,7 +361,8 @@ def flatten_df_one_at_a_time(df, exclude=[]):
 
     # get the unique session_ids and columns
     session_ids = df['session_id'].unique()
-    cols = ['session_id'] + [f'{col}_{i+1}' for i in range(len(session_ids)) for col in df.columns if col != 'session_id']
+    cols = ['session_id'] + [f'{col}_{i + 1}' for i in range(len(session_ids)) for col in df.columns if
+                             col != 'session_id']
 
     # create a new dataframe to hold the flattened data
     new_df = pd.DataFrame(columns=cols)
@@ -349,7 +370,8 @@ def flatten_df_one_at_a_time(df, exclude=[]):
     # define a function to apply to each group
     def flatten_group(group):
         # combine the columns into a single row
-        row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for col in group.columns if col != 'session_id']
+        row_data = [group[col].iloc[i] if pd.notnull(group[col].iloc[i]) else np.nan for i in range(len(group)) for col
+                    in group.columns if col != 'session_id']
         # add None values to the row if necessary to make it the same length as the columns
         if len(row_data) < len(cols) - 1:
             row_data += [np.nan] * (len(cols) - len(row_data) - 1)
@@ -366,7 +388,8 @@ def flatten_df_one_at_a_time(df, exclude=[]):
     # convert the columns back to their original datatypes
     for col in df.columns:
         if col != 'session_id':
-            new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]] = new_df[[f'{col}_{i+1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
+            new_df[[f'{col}_{i + 1}' for i in range(len(session_ids))]] = new_df[
+                [f'{col}_{i + 1}' for i in range(len(session_ids))]].astype(df[col].dtype, errors='ignore')
 
     # sort the columns
     new_df = new_df[cols]
@@ -376,7 +399,8 @@ def flatten_df_one_at_a_time(df, exclude=[]):
 
     # remove specified columns from exclude list
     for col_name in exclude:
-        new_df = new_df[[col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
+        new_df = new_df[
+            [col for col in new_df.columns if not (col.startswith(col_name + '_') and col != col_name + '_1')]]
 
     return new_df
-# do not use above 
+# do not use above

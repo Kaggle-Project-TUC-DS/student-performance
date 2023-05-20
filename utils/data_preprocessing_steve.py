@@ -79,7 +79,7 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         dataset_df.to_csv('data/processed/df_level.csv')
 
     # split the dataset into three parts based on level group
-    df_0_4, df_5_12, df_13_22 = split_level_groups(dataset_df)
+    df_0_4, df_5_12, df_13_22 = split_level_groups(dataset_df) # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
 
     # load the data
     # df_0_4 = pd.read_csv("data\processed\df_0_4.csv", dtype=dtypes, index_col= 0)
