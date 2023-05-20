@@ -45,7 +45,7 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)
-    elif data:
+    elif data is None:
         print('Provide either data as a dataframe or a filepath. Neither of both was given.')
 
     dataset_df = adding_new_variables_rescaling(data)
