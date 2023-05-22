@@ -4,14 +4,14 @@ import os
 import numpy as np
 import pandas as pd
 
-from loader_steve import load_data  # instead of load_train_data?
+from utils.loader_steve import load_data  # instead of load_train_data?
 # for Martins additional values
-from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
+from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
     adding_euclid_distance_cumsum_variable
-from preprocessing_func import adding_new_variables_rescaling
-from preprocessing_func import feature_engineer_steve
-from preprocessing_func import generate_rows, combine_rows
-from preprocessing_func import split_level_groups
+from utils.preprocessing_func import adding_new_variables_rescaling
+from utils.preprocessing_func import feature_engineer_steve
+from utils.preprocessing_func import generate_rows, combine_rows
+from utils.preprocessing_func import split_level_groups
 
 # Load in the Raw Dataset
 dtypes_raw = {
