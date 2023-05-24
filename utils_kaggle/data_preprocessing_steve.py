@@ -136,9 +136,9 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         df_generated_rows.to_csv('data/processed/df_generated_rows.csv')
 
     if output:
-        return grp_dict    # concat? since it's mainly for submissions
+        return grp_dict    # returns the whole dictionary
     else:
-        print("The output was saved to data/processed/")
+        print("The output was saved to data/processed/")  # Output = false ->
 
 
 if __name__ == "__main__":
