@@ -4,14 +4,14 @@ import os
 import numpy as np
 import pandas as pd
 
-from utils.loader_steve import load_data  # instead of load_train_data?
+from loader_steve import load_data  # instead of load_train_data?
 # for Martins additional values
-from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
+from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
     adding_euclid_distance_cumsum_variable
-from utils.preprocessing_func import adding_new_variables_rescaling
-from utils.preprocessing_func import feature_engineer_steve
-from utils.preprocessing_func import generate_rows, combine_rows
-from utils.preprocessing_func import split_level_groups
+from preprocessing_func import adding_new_variables_rescaling
+from preprocessing_func import feature_engineer_steve
+from preprocessing_func import generate_rows, combine_rows
+from preprocessing_func import split_level_groups
 
 # Load in the Raw Dataset
 dtypes_raw = {
@@ -39,9 +39,9 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     # set wd
     # get working directory and remove last folder
     # TODO: make this more robust
-    wd = os.path.dirname(os.getcwd())
-    os.chdir(wd)
-    print('Working Directory: ', os.getcwd())
+    #wd = os.path.dirname(os.getcwd())
+    #os.chdir(wd)
+    #print('Working Directory: ', os.getcwd())
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)
@@ -94,13 +94,15 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     n_flatten = {'0-4': 5, '5-12': 8, '13-22': 10}
 
     for lvl_groups in grp_dict:
-        grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], level_g=lvl_groups)
+        grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups],
+                                                                                   n_flatten=n_flatten[lvl_groups],
+                                                                                   level_g=lvl_groups)
         grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop, only_one=ex)
 
         df_generated_rows = df_generated_rows.append(grps_new_rows)
 
         if not output:
-            grp_dict[lvl_groups].to_csv('data/processed/df_'+str(lvl_groups)+'_flattened.csv')
+            grp_dict[lvl_groups].to_csv('data/processed/df_' + str(lvl_groups) + '_flattened.csv')
 
     # df_0_4, df0_4_missing_sessions, df0_4_new_rows = generate_rows(df_0_4, n_flatten=5, level_g="0-4")
     # df_0_4 = combine_rows(df_0_4, n_flatten=5, drop=drop, only_one=ex)
