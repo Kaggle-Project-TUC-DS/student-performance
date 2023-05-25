@@ -39,9 +39,9 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     # set wd
     # get working directory and remove last folder
     # TODO: make this more robust
-    wd = os.path.dirname(os.getcwd())
-    os.chdir(wd)
-    print('Working Directory: ', os.getcwd())
+    #wd = os.path.dirname(os.getcwd())
+    #os.chdir(wd)
+    #print('Working Directory: ', os.getcwd())
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)
@@ -97,7 +97,8 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], level_g=lvl_groups)
         grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop, only_one=ex)
 
-        df_generated_rows = df_generated_rows.append(grps_new_rows)
+        #df_generated_rows = df_generated_rows.append(grps_new_rows)
+        df_generated_rows = pd.concat([df_generated_rows, grps_new_rows])
 
         if not output:
             grp_dict[lvl_groups].to_csv('data/processed/df_'+str(lvl_groups)+'_flattened.csv')
