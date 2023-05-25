@@ -47,6 +47,8 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         data = load_data(file_path=file_path, dtypes=dtypes)
     elif data is None:
         print('Provide either data as a dataframe or a filepath. Neither of both was given.')
+    else:
+        data = data.astype(dtypes)
 
     dataset_df = adding_new_variables_rescaling(data)
 
@@ -78,16 +80,10 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         # save the leveled data (aggregated)
         dataset_df.to_csv('data/processed/df_level.csv')
 
-    # split the dataset into three parts based on level group
-    #df_0_4, df_5_12, df_13_22 = split_level_groups(dataset_df) # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
     grp_dict = split_level_groups(dataset_df)
 
     ex = ["level_group", "music", "hq", "fullscreen", "session_id"]
     drop = ["level"]
-
-    # df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
-    # make the dataframe, save it and delete it to save memory
-    # df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
 
     df_generated_rows = pd.DataFrame()
 
@@ -99,39 +95,10 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
                                                                                    level_g=lvl_groups)
         grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop, only_one=ex)
 
-        #df_generated_rows = df_generated_rows.append(grps_new_rows)
         df_generated_rows = pd.concat([df_generated_rows, grps_new_rows])
 
         if not output:
             grp_dict[lvl_groups].to_csv('data/processed/df_' + str(lvl_groups) + '_flattened.csv')
-
-    # df_0_4, df0_4_missing_sessions, df0_4_new_rows = generate_rows(df_0_4, n_flatten=5, level_g="0-4")
-    # df_0_4 = combine_rows(df_0_4, n_flatten=5, drop=drop, only_one=ex)
-    #
-    # if not output:
-    #     df_0_4.to_csv('data/processed/df_0_4_flattened.csv')
-    #
-    # # clear_memory(keep=["df_5_12","df_13_22"])
-    #
-    # # df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
-    # df_5_12, df5_12_missing_sessions, df5_12_new_rows = generate_rows(df_5_12, n_flatten=8, level_g="5-12")
-    # df_5_12 = combine_rows(df_5_12, n_flatten=8, drop=drop, only_one=ex)
-    #
-    # if not output:
-    #     df_5_12.to_csv('data/processed/df_5_12_flattened.csv')
-    #
-    # # clear_memory(keep= ["df_13_22"])
-    #
-    # # df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
-    # df_13_22, df13_22_missing_sessions, df13_22_new_rows = generate_rows(df_13_22, n_flatten=10, level_g="13-22")
-    # df_13_22 = combine_rows(df_13_22, n_flatten=10, drop=drop, only_one=ex)
-    #
-    # if not output:
-    #     df_13_22.to_csv('data/processed/df_13_22_flattened.csv')
-
-    # Export results
-    # export the generated rows in a separated df to control later
-    #df_generated_rows = pd.concat([df0_4_new_rows, df5_12_new_rows, df13_22_new_rows])
 
     if saveIntermediateFiles:
         df_generated_rows.to_csv('data/processed/df_generated_rows.csv')

@@ -19,6 +19,7 @@ def clear_memory(keep=None):
 
 
 def adding_new_variables_rescaling(dataset_df):
+
     dataset_df = dataset_df.sort_values(['session_id', 'elapsed_time'])
     dataset_df['elapsed_time'] = dataset_df['elapsed_time'] / 1000
     group = dataset_df.groupby(['session_id', 'level'])['elapsed_time'].diff()
