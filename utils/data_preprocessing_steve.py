@@ -4,14 +4,14 @@ import os
 import numpy as np
 import pandas as pd
 
-from loader_steve import load_data  # instead of load_train_data?
+from utils.loader_steve import load_data  # instead of load_train_data?
 # for Martins additional values
-from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
+from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
     adding_euclid_distance_cumsum_variable
-from preprocessing_func import adding_new_variables_rescaling
-from preprocessing_func import feature_engineer_steve
-from preprocessing_func import generate_rows, combine_rows
-from preprocessing_func import split_level_groups
+from utils.preprocessing_func import adding_new_variables_rescaling
+from utils.preprocessing_func import feature_engineer_steve
+from utils.preprocessing_func import generate_rows, combine_rows
+from utils.preprocessing_func import split_level_groups
 
 # Load in the Raw Dataset
 dtypes_raw = {
@@ -39,14 +39,16 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     # set wd
     # get working directory and remove last folder
     # TODO: make this more robust
-    wd = os.path.dirname(os.getcwd())
-    os.chdir(wd)
-    print('Working Directory: ', os.getcwd())
+    #wd = os.path.dirname(os.getcwd())
+    #os.chdir(wd)
+    #print('Working Directory: ', os.getcwd())
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)
-    elif data:
+    elif data is None:
         print('Provide either data as a dataframe or a filepath. Neither of both was given.')
+    else:
+        data = data.astype(dtypes)  #TODO: didn't help, didn't hurt -> what to do?
 
     dataset_df = adding_new_variables_rescaling(data)
 
@@ -78,59 +80,29 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
         # save the leveled data (aggregated)
         dataset_df.to_csv('data/processed/df_level.csv')
 
-    # split the dataset into three parts based on level group
-    df_0_4, df_5_12, df_13_22 = split_level_groups(dataset_df)
+    grp_dict = split_level_groups(dataset_df)
 
-    # load the data
-    # df_0_4 = pd.read_csv("data\processed\df_0_4.csv", dtype=dtypes, index_col= 0)
-    # df_0_4 = df_0_4.reset_index(drop=True)
-    # df_5_12 = pd.read_csv("data\processed\df_5_12.csv", dtype=dtypes, index_col= 0)
-    # df_5_12 = df_5_12.reset_index(drop=True)
-    # df_13_22 = pd.read_csv("data\processed\df_13_22.csv", dtype=dtypes, index_col= 0)
-    # df_13_22 = df_13_22.reset_index(drop=True)
-    # specify columns we want to exclude for the flattening ex: will only be present one time
-    # #(we only need the music information one time and not for every level)
-    # drop drop the coloumn completely. level is not required anymore
     ex = ["level_group", "music", "hq", "fullscreen", "session_id"]
     drop = ["level"]
 
-    # df_0_4_flattened, df_5_12_flattened, df_13_22_flattened = flatten_df(dataset_df, exclude= ex)
-    # make the dataframe, save it and delete it to save memory
-    # df_0_4 = flatten_df_one_at_a_time(df_0_4,exclude= ex)
+    df_generated_rows = pd.DataFrame()
 
-    df_0_4, df0_4_missing_sessions, df0_4_new_rows = generate_rows(df_0_4, n_flatten=5, level_g="0-4")
-    df_0_4 = combine_rows(df_0_4, n_flatten=5, drop=drop, only_one=ex)
+    n_flatten = {'0-4': 5, '5-12': 8, '13-22': 10}
 
-    if not output:
-        df_0_4.to_csv('data/processed/df_0_4_flattened.csv')
+    for lvl_groups in grp_dict:
+        grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], level_g=lvl_groups)
+        grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop, only_one=ex)
 
-    # clear_memory(keep=["df_5_12","df_13_22"])
+        df_generated_rows = pd.concat([df_generated_rows, grps_new_rows])
 
-    # df_5_12 = flatten_df_one_at_a_time(df_5_12, exclude= ex)
-    df_5_12, df5_12_missing_sessions, df5_12_new_rows = generate_rows(df_5_12, n_flatten=8, level_g="5-12")
-    df_5_12 = combine_rows(df_5_12, n_flatten=8, drop=drop, only_one=ex)
-
-    if not output:
-        df_5_12.to_csv('data/processed/df_5_12_flattened.csv')
-
-    # clear_memory(keep= ["df_13_22"])
-
-    # df_13_22 = flatten_df_one_at_a_time(df_13_22, exclude= ex)
-    df_13_22, df13_22_missing_sessions, df13_22_new_rows = generate_rows(df_13_22, n_flatten=10, level_g="13-22")
-    df_13_22 = combine_rows(df_13_22, n_flatten=10, drop=drop, only_one=ex)
-
-    if not output:
-        df_13_22.to_csv('data/processed/df_13_22_flattened.csv')
-
-    # Export results
-    # export the generated rows in a separated df to control later
-    df_generated_rows = pd.concat([df0_4_new_rows, df5_12_new_rows, df13_22_new_rows])
+        if not output:
+            grp_dict[lvl_groups].to_csv('data/processed/df_'+str(lvl_groups)+'_flattened.csv')
 
     if saveIntermediateFiles:
         df_generated_rows.to_csv('data/processed/df_generated_rows.csv')
 
     if output:
-        return df_0_4, df_5_12, df_13_22
+        return grp_dict     # returns the whole dictionary
     else:
         print("The output was saved to data/processed/")
 
