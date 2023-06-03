@@ -4,14 +4,26 @@ import os
 import numpy as np
 import pandas as pd
 
-from utils.loader_steve import load_data  # instead of load_train_data?
-# for Martins additional values
-from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
-    adding_euclid_distance_cumsum_variable
-from utils.preprocessing_func import adding_new_variables_rescaling
-from utils.preprocessing_func import feature_engineer_steve
-from utils.preprocessing_func import generate_rows, combine_rows
-from utils.preprocessing_func import split_level_groups
+# To make the imports compatible with Kaggle:
+try:    # Kaggle variant:
+    from loader_steve import load_data  # instead of load_train_data?
+    # for Martins additional values
+    from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
+        adding_euclid_distance_cumsum_variable
+    from preprocessing_func import adding_new_variables_rescaling
+    from preprocessing_func import feature_engineer_steve
+    from preprocessing_func import generate_rows, combine_rows
+    from preprocessing_func import split_level_groups
+except ModuleNotFoundError:     # Local variant:
+    from utils.loader_steve import load_data  # instead of load_train_data?
+    # for Martins additional values
+    from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
+        adding_euclid_distance_cumsum_variable
+    from utils.preprocessing_func import adding_new_variables_rescaling
+    from utils.preprocessing_func import feature_engineer_steve
+    from utils.preprocessing_func import generate_rows, combine_rows
+    from utils.preprocessing_func import split_level_groups
+
 
 # Load in the Raw Dataset
 dtypes_raw = {
@@ -42,6 +54,11 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     #wd = os.path.dirname(os.getcwd())
     #os.chdir(wd)
     #print('Working Directory: ', os.getcwd())
+    #wd = os.getcwd()
+    #print("Current working directory: ", wd)
+    #if wd[-10:] == 'submission': wd = wd[:-11]
+    #os.chdir(wd)
+    #print("New working directory: ", os.getcwd())
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)

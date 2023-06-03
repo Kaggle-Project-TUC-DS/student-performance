@@ -1,10 +1,10 @@
 ###Imports for the Data Preprocessing
 import numpy as np
 import pandas as pd
-import matplotlib as plt
-import os
+# import matplotlib as plt
+# import os
 import gc
-from typing import Tuple
+# from typing import Tuple
 
 
 def clear_memory(keep=None):
@@ -19,7 +19,6 @@ def clear_memory(keep=None):
 
 
 def adding_new_variables_rescaling(dataset_df):
-
     dataset_df = dataset_df.sort_values(['session_id', 'elapsed_time'])
     dataset_df['elapsed_time'] = dataset_df['elapsed_time'] / 1000
     group = dataset_df.groupby(['session_id', 'level'])['elapsed_time'].diff()
