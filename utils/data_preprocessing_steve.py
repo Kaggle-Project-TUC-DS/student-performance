@@ -1,11 +1,10 @@
 ###Imports for the Data Preprocessing
 import os
-
 import numpy as np
 import pandas as pd
 
 # To make the imports compatible with Kaggle:
-try:    # Kaggle variant:
+try:  # Kaggle variant:
     from loader_steve import load_data  # instead of load_train_data?
     # for Martins additional values
     from preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
@@ -14,7 +13,7 @@ try:    # Kaggle variant:
     from preprocessing_func import feature_engineer_steve
     from preprocessing_func import generate_rows, combine_rows
     from preprocessing_func import split_level_groups
-except ModuleNotFoundError:     # Local variant:
+except ModuleNotFoundError:  # Local variant:
     from utils.loader_steve import load_data  # instead of load_train_data?
     # for Martins additional values
     from utils.preprocessing_func import adding_euclid_distance_variable, adding_screen_distance_clicks_variable, \
@@ -23,7 +22,6 @@ except ModuleNotFoundError:     # Local variant:
     from utils.preprocessing_func import feature_engineer_steve
     from utils.preprocessing_func import generate_rows, combine_rows
     from utils.preprocessing_func import split_level_groups
-
 
 # Load in the Raw Dataset
 dtypes_raw = {
@@ -48,24 +46,24 @@ dtypes_raw = {
 
 
 def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFiles=True, dtypes=None, output=True):
-    # set wd
-    # get working directory and remove last folder
-    # TODO: make this more robust
-    #wd = os.path.dirname(os.getcwd())
-    #os.chdir(wd)
-    #print('Working Directory: ', os.getcwd())
-    #wd = os.getcwd()
-    #print("Current working directory: ", wd)
-    #if wd[-10:] == 'submission': wd = wd[:-11]
-    #os.chdir(wd)
-    #print("New working directory: ", os.getcwd())
+    # Set wd: -> get working directory and remove last folder - currently compatible with folders: submission,
+    # notebooks and content root TODO: Test this and make this more robust
+    wd = os.getcwd()
+    if wd[-10:] == 'submission':
+        wd = wd[:-11]
+        os.chdir(wd)
+        print("Changed working directory: ", os.getcwd())
+    elif wd[-9:] == 'notebooks':
+        wd = wd[:-10]
+        os.chdir(wd)
+        print("Changed working directory: ", os.getcwd())
+    # else:
+        # print("No need to change working directory: ", wd)
 
     if file_path and dtypes:
         data = load_data(file_path=file_path, dtypes=dtypes)
     elif data is None:
         print('Provide either data as a dataframe or a filepath. Neither of both was given.')
-    else:
-        data = data.astype(dtypes)  #TODO: didn't help, didn't hurt -> what to do?
 
     dataset_df = adding_new_variables_rescaling(data)
 
@@ -107,19 +105,22 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     n_flatten = {'0-4': 5, '5-12': 8, '13-22': 10}
 
     for lvl_groups in grp_dict:
-        grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], level_g=lvl_groups)
-        grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop, only_one=ex)
+        grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups],
+                                                                                   n_flatten=n_flatten[lvl_groups],
+                                                                                   level_g=lvl_groups)
+        grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop,
+                                            only_one=ex)
 
         df_generated_rows = pd.concat([df_generated_rows, grps_new_rows])
 
         if not output:
-            grp_dict[lvl_groups].to_csv('data/processed/df_'+str(lvl_groups)+'_flattened.csv')
+            grp_dict[lvl_groups].to_csv('data/processed/df_' + str(lvl_groups) + '_flattened.csv')
 
     if saveIntermediateFiles:
         df_generated_rows.to_csv('data/processed/df_generated_rows.csv')
 
     if output:
-        return grp_dict     # returns the whole dictionary
+        return grp_dict  # returns the whole dictionary
     else:
         print("The output was saved to data/processed/")
 
