@@ -28,7 +28,7 @@ def adding_new_variables_rescaling(dataset_df):
     return dataset_df
 
 
-def feature_engineer_steve(dataset_df):
+def feature_engineer_steve(dataset_df, group_by='level'):
     CATEGORICAL = ['event_name', 'name', 'fqid', 'room_fqid', 'text_fqid', 'fullscreen', 'hq', 'music']
     NUMERICALmean = ['hover_duration', 'difference_clicks', "distance_clicks", "screen_distance_clicks"]
     NUMERICALstd = ['elapsed_time', 'page', 'hover_duration', 'difference_clicks', "distance_clicks",
@@ -36,30 +36,30 @@ def feature_engineer_steve(dataset_df):
     COUNTING = ['index']
     MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
     dfs = []
-    tmp = dataset_df.groupby(['session_id', 'level'])["level_group"].first()
-    tmp.name = tmp.name
-    dfs.append(tmp)
+    #tmp = dataset_df.groupby(['session_id', group_by])["level_group"].first()
+    #tmp.name = tmp.name
+    #dfs.append(tmp)
     for c in CATEGORICAL:
         if c not in ['fullscreen', 'hq', 'music']:
-            tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('nunique')
+            tmp = dataset_df.groupby(['session_id', group_by])[c].agg('nunique')
         else:
-            tmp = dataset_df.groupby(['session_id', 'level'])[c].first().astype(int).fillna(0)
+            tmp = dataset_df.groupby(['session_id', group_by])[c].first().astype(int).fillna(0)
         dfs.append(tmp)
     for c in NUMERICALmean:
-        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('mean')
+        tmp = dataset_df.groupby(['session_id', group_by])[c].agg('mean')
         tmp.name = tmp.name + '_mean'
         dfs.append(tmp)
     for c in NUMERICALstd:
-        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('std')
+        tmp = dataset_df.groupby(['session_id', group_by])[c].agg('std')
         tmp.name = tmp.name + '_std'
         dfs.append(tmp)
     for c in COUNTING:
-        tmp = 1 + dataset_df.groupby(['session_id', 'level'])[c].agg('max') - \
-              dataset_df.groupby(['session_id', 'level'])[c].agg('min')
+        tmp = 1 + dataset_df.groupby(['session_id', group_by])[c].agg('max') - \
+              dataset_df.groupby(['session_id', group_by])[c].agg('min')
         tmp.name = tmp.name + '_sum_of_actions'
         dfs.append(tmp)
     for c in MAXIMUM:
-        tmp = dataset_df.groupby(['session_id', 'level'])[c].agg('max') - dataset_df.groupby(['session_id', 'level'])[
+        tmp = dataset_df.groupby(['session_id', group_by])[c].agg('max') - dataset_df.groupby(['session_id', group_by])[
             c].agg('min')
         tmp.name = tmp.name + '_max'
         dfs.append(tmp)
@@ -129,8 +129,7 @@ def adding_euclid_distance_sum_variable(dataset_df):
     return new_df
 
 
-def split_level_groups(
-        df):  # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
+def split_level_groups(df, group_by):  # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
     # Split the dataframe into three different ones depending on the level group
     groups = df.groupby('level_group')
 
@@ -140,7 +139,7 @@ def split_level_groups(
     # Loop over each group
     for name, group in groups:
         # Add the group to the result dictionary
-        result[name] = group.sort_values(['session_id', 'level']).reset_index(drop=False)
+        result[name] = group.sort_values(['session_id', group_by]).reset_index(drop=False)
 
     # Access the resulting dataframes using their keys
     #df_0_4 = result['0-4']
@@ -207,10 +206,10 @@ def combine_rows(df, n_flatten=5, only_one=None, drop=None):
     return new_df
 
 
-def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
+def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str, group_by: str = 'level'): # TODO: correct to add group_by here?
     # Use value_counts() to get the count of each session_id
     counts = df['session_id'].value_counts()
-    df['level'] = df['level'].astype(np.uint8)
+    df[group_by] = df[group_by].astype(np.uint8)
 
     # Check if each group has the same number of rows
     if (counts % n_flatten).any():
@@ -223,10 +222,13 @@ def generate_rows(df: pd.DataFrame, n_flatten: int, level_g: str):
         # Loop through the session_ids that need to be generated
         for session_id in need_generating:
             # Check if all levels are present in this session
-            levels_present = set(df.loc[df['session_id'] == session_id, 'level'].unique())
-            min_level = df['level'].min()
-            max_level = df['level'].max()
-            expected_levels = set(range(min_level, max_level + 1))
+            levels_present = set(df.loc[df['session_id'] == session_id, group_by].unique())
+            min_level = df[group_by].min()
+            max_level = df[group_by].max()
+            if group_by == 'level':
+                expected_levels = set(range(min_level, max_level + 1))
+            elif group_by == 'level_group':
+                expected_levels = 1     # ich sollte aufhören den Rattenschwanz für etwas anzupassen das ihn nicht braucht, ciao schönen Sonntag
             if levels_present != expected_levels:
                 # Generate new rows for missing levels
                 missing_levels = expected_levels - levels_present

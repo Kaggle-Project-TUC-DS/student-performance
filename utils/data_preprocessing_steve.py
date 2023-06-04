@@ -45,7 +45,7 @@ dtypes_raw = {
     'level_group': 'category'}
 
 
-def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFiles=True, dtypes=None, output=True):
+def pp_pipeline_noah(data=None, file_path=None, group_by: str = 'level', flatten=True, saveIntermediateFiles=True, dtypes=None, output=True):
     # Set wd: -> get working directory and remove last folder - currently compatible with folders: submission,
     # notebooks and content root TODO: Test this and make this more robust
     wd = os.getcwd()
@@ -89,13 +89,13 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     # Careful, werid fix of a problem: when changing the categories and variables. copy them into the right place in the deature engeneer function.
     # they cant be loaded across the files.
 
-    dataset_df = feature_engineer_steve(dataset_df)
+    dataset_df = feature_engineer_steve(dataset_df, group_by=group_by)
 
     if saveIntermediateFiles:
         # save the leveled data (aggregated)
         dataset_df.to_csv('data/processed/df_level.csv')
 
-    grp_dict = split_level_groups(dataset_df)
+    grp_dict = split_level_groups(dataset_df, group_by)
 
     ex = ["level_group", "music", "hq", "fullscreen", "session_id"]
     drop = ["level"]
@@ -107,7 +107,7 @@ def pp_pipeline_noah(data=None, file_path=None, flatten=True, saveIntermediateFi
     for lvl_groups in grp_dict:
         grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups],
                                                                                    n_flatten=n_flatten[lvl_groups],
-                                                                                   level_g=lvl_groups)
+                                                                                   level_g=lvl_groups, group_by=group_by)
         grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop,
                                             only_one=ex)
 
