@@ -120,6 +120,158 @@ def adding_euclid_distance_sum_variable(dataset_df):
     new_df = dataset_df.assign(cumsum_distance_clicks_max= cumsum_distance_clicks_max)
     return new_df
 
+def get_adj_matrices(session_df,room_fqid_list):
+    # looking at only one level in one session and generate a adjacence matrix
+    adj_matrix_level = np.zeros((session_df['level'].nunique(),len(room_fqid_list),len(room_fqid_list)))
+    adj_matrix_level_dist = np.zeros((session_df['level'].nunique(),len(room_fqid_list),len(room_fqid_list)))
+    adj_matrix_level_time = np.zeros((session_df['level'].nunique(),len(room_fqid_list),len(room_fqid_list)))
+    adj_matrix_level_velo = np.zeros((session_df['level'].nunique(),len(room_fqid_list),len(room_fqid_list)))
+   
+    # Iteriere über die eindeutigen Werte der Spalte 'level' im session_df_full DataFrame mit Hilfe des range-Befehls
+    for level in range(session_df['level'].nunique()):
+            
+            # Filtere den session_df_full DataFrame nach dem aktuellen Level
+            session_df_level = session_df[session_df['level'] == level]
+
+            # Iteriere über die Indizes der room_fqid-Spalte im session_df_level DataFrame
+            # Beginne mit dem ersten Index und ende einen Index vor dem letzten Index
+            # Initialisieren des Raummerker 
+            n = session_df_level['room_fqid'].index[0]
+
+            for j in range(session_df_level['room_fqid'].index[0], session_df_level['room_fqid'].index[0] + len(session_df_level['room_fqid'])-1):                
+                # Überprüfe, ob der Raum in der nächsten Zeile gleich dem Raum in der aktuellen Zeile ist
+                h=1
+                try:                    
+                    if session_df_level['room_fqid'][j+1] == session_df_level['room_fqid'][j]:
+                        pass
+                    else:                
+                        # Wenn die Räume nicht gleich sind, weise den aktuellen Raum und den vorherigen Raum zu Variablen zu
+                        current_room = session_df_level['room_fqid'][j+1]
+                        previous_room = session_df_level['room_fqid'][j]
+                        
+                        # Ermittle den Index des aktuellen und vorherigen Raums in der room_fqid_list
+                        current_room_index = room_fqid_list.index(current_room)
+                        previous_room_index = room_fqid_list.index(previous_room)
+                        
+                        # Erhöhe den Eintrag in der Adjazenzmatrix adj_matrix_level um 1
+                        adj_matrix_level[level][previous_room_index][current_room_index] += 1                
+                        # Erhöhe den Eintrag in der Adjazenzmatrix adj_matrix_level_dist um den im letzten Raum zurückgelegten Weg
+                        adj_matrix_level_dist[level][previous_room_index][current_room_index] += session_df_level['sum_distance_clicks'][j]-session_df_level['sum_distance_clicks'][n]
+                        # Erhöhe den Eintrag in der Adjazenzmatrix adj_matrix_level_time um die im letzten Raum vergange Zeit
+                        adj_matrix_level_time[level][previous_room_index][current_room_index] += session_df_level['elapsed_time'][j]-session_df_level['elapsed_time'][n]
+                        # Merker für Raumwechsel
+                        n = j
+
+                        if adj_matrix_level_time[level][previous_room_index][current_room_index] !=0:
+                            adj_matrix_level_velo[level][previous_room_index][current_room_index] = int(adj_matrix_level_dist[level][previous_room_index][current_room_index]/adj_matrix_level_time[level][previous_room_index][current_room_index])                            
+                except:
+                    pass                    
+
+    return  adj_matrix_level, adj_matrix_level_dist, adj_matrix_level_time, adj_matrix_level_velo
+
+def calc_gravity(matrix):
+    gesamtmasse = np.sum(matrix)
+    zeilen, spalten = matrix.shape
+
+    x_schwerpunkt = 0
+    y_schwerpunkt = 0
+
+    for i in range(zeilen):
+        for j in range(spalten):
+            masse = matrix[i, j]
+            x_schwerpunkt += j * masse
+            y_schwerpunkt += i * masse
+    try:
+        if gesamtmasse == 0 :
+            pass
+        else:
+            x_schwerpunkt /= gesamtmasse
+            y_schwerpunkt /= gesamtmasse
+    except:
+        pass
+
+    return x_schwerpunkt, y_schwerpunkt
+
+def adj_gravity(dataset_df):
+    drop_df = dataset_df.drop_duplicates(subset=['session_id'])
+    session_id_list = drop_df['session_id'].to_list()
+
+    drop_df = dataset_df.drop_duplicates(subset=['room_fqid'])
+    room_fqid_list = drop_df['room_fqid'].to_list() 
+
+    level_count = dataset_df['level'].nunique()
+    coordinats = 2
+
+    adj_matrix_level_gravity = np.zeros((level_count, coordinats))
+    adj_matrix_level_dist_gravity = np.zeros((level_count, coordinats))
+    adj_matrix_level_time_gravity = np.zeros((level_count, coordinats))
+    adj_matrix_level_velo_gravity = np.zeros((level_count, coordinats))
+
+    # Erstellen des DataFrames
+    gravity_df = pd.DataFrame({
+                'level': 0,
+                'session_id': 0,
+                'gravity_x': adj_matrix_level_gravity[:, 0],
+                'gravity_y': adj_matrix_level_gravity[:, 1],
+                'dist_gravity_x': adj_matrix_level_dist_gravity[:, 0],
+                'dist_gravity_y': adj_matrix_level_dist_gravity[:, 1],
+                'time_gravity_x': adj_matrix_level_time_gravity[:, 0],
+                'time_gravity_y': adj_matrix_level_time_gravity[:, 1],
+                'velo_gravity_x': adj_matrix_level_velo_gravity[:, 0],
+                'velo_gravity_y': adj_matrix_level_velo_gravity[:, 1]
+                })
+
+    drop_df = dataset_df.drop_duplicates(subset=['session_id'])  
+    session_id_list = drop_df['session_id'].to_list()
+    try:
+        for session_id in range(len(session_id_list)):            
+            session_df_full = dataset_df[dataset_df['session_id'] == session_id_list[session_id]]
+            try:
+                adj_matrix_level, adj_matrix_level_dist, adj_matrix_level_time, adj_matrix_level_velo = get_adj_matrices(session_df_full, room_fqid_list)            
+            except:
+                print('not used sessionindex and session',session_id,session_id_list[session_id])
+            
+            # Erstellen des DataFrames
+            sub_df = pd.DataFrame({
+                'level': 0,
+                'session_id': 0,
+                'gravity_x': adj_matrix_level_gravity[:, 0],
+                'gravity_y': adj_matrix_level_gravity[:, 1],
+                'dist_gravity_x': adj_matrix_level_dist_gravity[:, 0],
+                'dist_gravity_y': adj_matrix_level_dist_gravity[:, 1],
+                'time_gravity_x': adj_matrix_level_time_gravity[:, 0],
+                'time_gravity_y': adj_matrix_level_time_gravity[:, 1],
+                'velo_gravity_x': adj_matrix_level_velo_gravity[:, 0],
+                'velo_gravity_y': adj_matrix_level_velo_gravity[:, 1]
+                })
+            
+            for level in range(level_count):
+                adj_matrix_level_gravity[level,:]  = calc_gravity(adj_matrix_level[level])
+                adj_matrix_level_dist_gravity[level,:]  = calc_gravity(adj_matrix_level_dist[level])
+                adj_matrix_level_time_gravity[level,:]  = calc_gravity(adj_matrix_level_time[level])
+                adj_matrix_level_velo_gravity[level,:]  = calc_gravity(adj_matrix_level_velo[level])
+
+                # Erstellen des DataFrames
+                new_session_df  = pd.DataFrame({
+                    'level': list(range(level_count)),
+                    'session_id': session_id_list[session_id],
+                    'gravity_x': adj_matrix_level_gravity[:, 0],
+                    'gravity_y': adj_matrix_level_gravity[:, 1],
+                    'dist_gravity_x': adj_matrix_level_dist_gravity[:, 0],
+                    'dist_gravity_y': adj_matrix_level_dist_gravity[:, 1],
+                    'time_gravity_x': adj_matrix_level_time_gravity[:, 0],
+                    'time_gravity_y': adj_matrix_level_time_gravity[:, 1],
+                    'velo_gravity_x': adj_matrix_level_velo_gravity[:, 0],
+                    'velo_gravity_y': adj_matrix_level_velo_gravity[:, 1]
+                })
+                # Hinzufügen des neuen DataFrames zur vorhandenen DataFrame gravity_df
+                sub_df.update(new_session_df)
+            gravity_df = pd.concat([gravity_df, sub_df], ignore_index=True)          
+    except:
+        pass
+    return gravity_df
+
+
 def split_level_groups(df):
     # Split the dataframe into three different ones depending on the level group
     groups = df.groupby('level_group')
