@@ -4,8 +4,6 @@ import pandas as pd
 # import matplotlib as plt
 # import os
 import gc
-
-
 # from typing import Tuple
 
 
@@ -38,15 +36,14 @@ def feature_engineer_steve(dataset_df, group_by='level'):
     COUNTING = ['index']
     MAXIMUM = ['difference_clicks', 'elapsed_time', "sum_distance_clicks"]
     dfs = []
-    tmp = dataset_df.groupby(['session_id', group_by])["level_group"].first()
-    tmp.name = tmp.name
-    dfs.append(tmp)
+    #tmp = dataset_df.groupby(['session_id', group_by])["level_group"].first()
+    #tmp.name = tmp.name
+    #dfs.append(tmp)
     for c in CATEGORICAL:
         if c not in ['fullscreen', 'hq', 'music']:
             tmp = dataset_df.groupby(['session_id', group_by])[c].agg('nunique')
         else:
-            tmp = dataset_df.groupby(['session_id', group_by])[c].first().fillna(0).astype(int).fillna(
-                0)  # TODO: potential threat
+            tmp = dataset_df.groupby(['session_id', group_by])[c].first().astype(int).fillna(0)
         dfs.append(tmp)
     for c in NUMERICALmean:
         tmp = dataset_df.groupby(['session_id', group_by])[c].agg('mean')
@@ -132,11 +129,11 @@ def adding_euclid_distance_sum_variable(dataset_df):
     return new_df
 
 
-def split_level_groups(df, group_by):
+def split_level_groups(df, group_by):  # TODO: Important: make adaptable for submission process - needs to work also if there is just data from one level_group handed over
     # Split the dataframe into three different ones depending on the level group
-    print(df['level_group'].unique())
     groups = df.groupby('level_group')
-    # Create a dictionary to store the resulting dataframes in
+
+    # Create a dictionary to store the resulting dataframes
     result = {}
 
     # Loop over each group

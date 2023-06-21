@@ -57,10 +57,6 @@ def pp_pipeline_noah(data=None, file_path=None, group_by: str = 'level', flatten
         wd = wd[:-10]
         os.chdir(wd)
         print("Changed working directory: ", os.getcwd())
-    elif wd[-5:] == 'utils':
-        wd = wd[:-6]
-        os.chdir(wd)
-        print("Changed working directory: ", os.getcwd())
     # else:
         # print("No need to change working directory: ", wd)
 
@@ -101,11 +97,8 @@ def pp_pipeline_noah(data=None, file_path=None, group_by: str = 'level', flatten
 
     grp_dict = split_level_groups(dataset_df, group_by)
 
-    if output and group_by == 'level_group':
+    if output and group_by == 'level':
         return grp_dict
-    elif group_by == 'level_group':
-        for lvl_groups in grp_dict:
-            grp_dict[lvl_groups].to_csv('data/processed/df_' + str(lvl_groups) + '_group-by-level.csv')
 
     ex = ["level_group", "music", "hq", "fullscreen", "session_id"]
     drop = ["level"]
@@ -113,12 +106,12 @@ def pp_pipeline_noah(data=None, file_path=None, group_by: str = 'level', flatten
     df_generated_rows = pd.DataFrame()
 
     n_flatten = {'0-4': 5, '5-12': 8, '13-22': 10}
-
+    
     for lvl_groups in grp_dict:
 
         grp_dict[lvl_groups], grps_missing_sessions, grps_new_rows = generate_rows(grp_dict[lvl_groups],
                                                                                    n_flatten=n_flatten[lvl_groups],
-                                                                                   level_g=lvl_groups, mean_value_levels=df_mean_level)
+                                                                                   level_g=lvl_groups, df_mean_level=df_mean_level)
         grp_dict[lvl_groups] = combine_rows(grp_dict[lvl_groups], n_flatten=n_flatten[lvl_groups], drop=drop,
                                             only_one=ex)
 
@@ -137,14 +130,6 @@ def pp_pipeline_noah(data=None, file_path=None, group_by: str = 'level', flatten
 
 
 if __name__ == "__main__":
-    wd = os.getcwd()
-    if wd[-5:] == 'utils':
-        wd = wd[:-6]
-        os.chdir(wd)
-        print("Changed working directory: ", os.getcwd())
-
-    train = load_data(file_path='data/raw/train.csv', n_rows=10000, dtypes=dtypes_raw)
-
     # With this specification the data preprocessing should do the same as the previous version of the script:
-    pp_pipeline_noah(data=train, file_path=None, group_by='level_group', flatten=True, saveIntermediateFiles=True,
+    pp_pipeline_noah(data=None, file_path="data/raw/train.csv", flatten=True, saveIntermediateFiles=True,
                      dtypes=dtypes_raw, output=False)
