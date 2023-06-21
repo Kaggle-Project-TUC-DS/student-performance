@@ -144,7 +144,8 @@ if __name__ == "__main__":
         print("Changed working directory: ", os.getcwd())
 
     train = load_data(file_path='data/raw/train.csv', n_rows=10000, dtypes=dtypes_raw)
+    df_mean_level = pd.read_csv("data/processed/df_mean_level.csv")
 
     # With this specification the data preprocessing should do the same as the previous version of the script:
-    pp_pipeline_noah(data=train, file_path=None, group_by='level_group', flatten=True, saveIntermediateFiles=True,
+    pp_pipeline_noah(df_mean_level = df_mean_level ,data=train, file_path=None, group_by='level', flatten=True, saveIntermediateFiles=True,
                      dtypes=dtypes_raw, output=False)
