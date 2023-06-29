@@ -170,27 +170,27 @@ def get_adj_matrices(session_df,room_fqid_list):
     return  adj_matrix_level, adj_matrix_level_dist, adj_matrix_level_time, adj_matrix_level_velo
 
 def calc_gravity(matrix):
-    gesamtmasse = np.sum(matrix)
-    zeilen, spalten = matrix.shape
+    sum_mass = np.sum(matrix)
+    row, coulum = matrix.shape
 
-    x_schwerpunkt = 0
-    y_schwerpunkt = 0
+    x_center = 0
+    y_center = 0
 
-    for i in range(zeilen):
-        for j in range(spalten):
-            masse = matrix[i, j]
-            x_schwerpunkt += j * masse
-            y_schwerpunkt += i * masse
+    for i in range(row):
+        for j in range(coulum):
+            mass = matrix[i, j]
+            x_center += j * mass
+            y_center += i * mass
     try:
-        if gesamtmasse == 0 :
+        if sum_mass == 0 :
             pass
         else:
-            x_schwerpunkt /= gesamtmasse
-            y_schwerpunkt /= gesamtmasse
+            x_center /= sum_mass
+            y_center /= sum_mass
     except:
         pass
 
-    return x_schwerpunkt, y_schwerpunkt
+    return x_center, y_center
 
 def adj_gravity(dataset_df):
     drop_df = dataset_df.drop_duplicates(subset=['session_id'])
