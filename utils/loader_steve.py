@@ -13,6 +13,7 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 
+
 def load_data(file_path: str , dtypes: dict = None, n_rows: int = None):
     # If dtypes is not specified, set default data types for each column
     if dtypes is None:
